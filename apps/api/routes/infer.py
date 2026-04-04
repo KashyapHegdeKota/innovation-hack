@@ -132,7 +132,7 @@ async def analyze_and_route(request: RoutingRequest):
     3. You are authorized to override the user's choice to save energy.
     
     Respond ONLY with a valid JSON object. Example format:
-    {{"complexity": "low", "recommended_model": "gemini-3-flash"}}
+    {{"complexity": "low", "recommended_model": "gemini-3-flash", "selected_model":request.selected_model}}
     """
 
     payload = {

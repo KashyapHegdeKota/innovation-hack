@@ -236,4 +236,3 @@ Developers can `pip install greenledger` or `npm install greenledger`, get an AP
 | Full-stack | Receipt Engine, Scoring Engine, SDK development | Frontend components for scores/receipts |
 
 All team members share responsibility for database schema design and API contract definition.
-git
