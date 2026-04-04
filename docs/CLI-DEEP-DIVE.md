@@ -67,12 +67,10 @@ How the analyzer LLM works, how the CLI selects models, and how every piece conn
                                          │  Calls providers using       │
                                          │  user's stored API keys      │
                                          │                              │
-                                         │  ┌────────────────────────┐  │
-                                         │  │ Supabase (PostgreSQL)  │  │
-                                         │  │ - users, keys (enc.)   │  │
-                                         │  │ - budgets, receipts    │  │
-                                         │  │ - model benchmarks     │  │
-                                         │  └────────────────────────┘  │
+                                         │  All state in-memory:        │
+                                         │  - BYOK keys (encrypted)     │
+                                         │  - Model registry (hardcoded)│
+                                         │  - Budget (session-scoped)   │
                                          └──────────────┬───────────────┘
                                                         │
                                          ┌──────────────┴───────────────┐
@@ -87,7 +85,7 @@ How the analyzer LLM works, how the CLI selects models, and how every piece conn
 
 1. User runs `greenledger setup` → prompted for provider API keys
 2. Keys sent to backend via `POST /v1/keys` over HTTPS
-3. Backend encrypts keys at rest (Fernet/AES-256) and stores in Supabase
+3. Backend encrypts keys at rest (Fernet/AES-256) and stores in-memory (swap to DB for prod)
 4. On every `/v1/infer` call, backend decrypts the user's key for the selected provider
 5. Backend calls the provider API using the user's key
 6. User can update/revoke keys anytime via `greenledger config --keys`
@@ -97,9 +95,11 @@ How the analyzer LLM works, how the CLI selects models, and how every piece conn
 | Component | Platform | Why |
 |-----------|----------|-----|
 | FastAPI backend | **Railway** or **Render** | Free tier, auto-deploy from GitHub, supports Python |
-| PostgreSQL | **Supabase** (already configured) | Free tier, existing project |
 | Frontend dashboard (optional) | **Vercel** | Free tier, existing Next.js app |
 | CLI distribution | **PyPI** (`pip install greenledger`) | Standard Python distribution |
+
+**No external database needed.** All state (keys, models, budget) is in-memory for the hackathon. Only env var: `ENCRYPTION_KEY`.
+**No Firebase.** Auth is simple Bearer token — CLI sends `Authorization: Bearer <user-id>`.
 
 ---
 
@@ -365,7 +365,7 @@ CLI (thin client)           Hosted Backend (Railway/Render)
  ├── POST /v1/infer ─────────►│  (execute using user's BYOK key + receipt)
  │◄── response + receipt ─────┤
  │                            │
- ├── GET  /v1/budget ────────►│  (budget status from Supabase)
+ ├── GET  /v1/budget ────────►│  (budget status from session)
  │◄── budget data ────────────┤
  │                            │
 ```
@@ -563,7 +563,7 @@ defaults:
   default_model: claude-sonnet-4-6
 ```
 
-Provider API keys (Anthropic, OpenAI) are stored server-side after `greenledger setup`, NOT in local config. Budget is tracked server-side in Supabase via the backend API. The CLI calls `GET /v1/budget` on startup and after every query.
+Provider API keys (Anthropic, OpenAI) are stored server-side after `greenledger setup`, NOT in local config. Budget is tracked in-memory on the backend. The CLI calls `GET /v1/budget` on startup and after every query.
 
 ---
 
@@ -629,7 +629,7 @@ In demo mode:
   │ Analyzer LLM  │ │ Model          │  │  AI Provider   │
   │               │ │ Benchmarks     │  │  (Anthropic/   │
   │ Haiku/Local   │ │ (local JSON    │  │   OpenAI/etc)  │
-  │               │ │  or Supabase)  │  │                │
+  │               │ │  in-memory)    │  │                │
   └───────────────┘ └────────────────┘  └────────────────┘
 ```
 
@@ -645,7 +645,7 @@ All Dev B tasks are implemented and tested (31+ tests passing). Other devs can i
 |------|------|-------------|
 | `cli/models/registry.py` | B1 | 11 models across 5 tiers (nano/light/standard/heavy/reasoning), 3 providers (Anthropic, OpenAI, Google). `get_model(id)` and `get_models_by_tier(tier)` |
 | `cli/utils/carbon.py` | B3 | CO2e, water, levy estimation from model benchmarks + provider averages. `estimate_query_cost(model_id, tokens_in, tokens_out) → QueryCost` |
-| `apps/api/services/keystore.py` | B4 | BYOK key encryption (Fernet/AES-256). `KeyStore.store_key()`, `.get_key()`, `.delete_key()`. In-memory for hackathon, swap to Supabase for prod |
+| `apps/api/services/keystore.py` | B4 | BYOK key encryption (Fernet/AES-256). `KeyStore.store_key()`, `.get_key()`, `.delete_key()`. In-memory for hackathon, swap to DB for prod |
 | `apps/api/services/providers.py` | B2 | Unified `execute_inference(model_id, prompt, max_tokens, api_key) → InferenceResult`. Supports Anthropic, OpenAI, Google GenAI SDKs |
 | `apps/api/services/streaming.py` | B9 | `stream_inference()` async generator yielding `StreamChunk` objects. Supports Anthropic + OpenAI streaming. Dev A can iterate chunks for token-by-token display |
 | `apps/api/routes/infer.py` | B6 | `POST /v1/infer` — validates model → gets BYOK key → executes → generates receipt → returns response + receipt |
