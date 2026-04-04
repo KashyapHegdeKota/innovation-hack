@@ -22,7 +22,7 @@ Before splitting into individual tracks, the whole team does this together:
 - [ ] Install shared dependencies: `rich`, `prompt_toolkit`, `click`, `httpx`, `pydantic`
 - [ ] Create `cli/models/schemas.py` with shared types (extend from existing `apps/api/models/schemas.py`)
 - [ ] Create `cli/config.py` with `CLIConfig` loading from `~/.greenledger/config.yaml`
-- [ ] Create `.env.example` for backend: `SUPABASE_URL`, `SUPABASE_KEY`, `FIREBASE_*`, `ENCRYPTION_KEY` (for BYOK key storage), `ANTHROPIC_API_KEY` (for analyzer only)
+- [ ] Create `.env.example` for backend: `SUPABASE_URL`, `SUPABASE_KEY`, `ENCRYPTION_KEY` (for BYOK key storage), `ANTHROPIC_API_KEY` (for analyzer only)
 - [ ] Set up Railway or Render project linked to GitHub repo for auto-deploy
 - [ ] Each person creates their own feature branch: `feat/cli-core`, `feat/providers-backend`, `feat/budget-display`, `feat/demo-polish`
 
@@ -339,7 +339,7 @@ Before splitting into individual tracks, the whole team does this together:
 
 - [ ] **D8: Deploy Backend to Railway/Render**
   - Configure `railway.json` or `render.yaml` for auto-deploy
-  - Set env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `ENCRYPTION_KEY`, `ANTHROPIC_API_KEY` (analyzer)
+  - Set env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `ENCRYPTION_KEY` (any random string), `ANTHROPIC_API_KEY` (analyzer)
   - Verify `/health` endpoint works on deployed URL
   - Update `cli/config.py` default `backend_url` to deployed URL
   - **Test**: CLI on local machine talks to deployed backend end-to-end
@@ -404,12 +404,8 @@ Dev D  │ Demo mode│      │ Slash    │      │ Demo     │
 
 ### Known Integration Gaps (Must Resolve Before Merge)
 
-**1. CLI Auth — WHO: Dev A + Dev D**
-Firebase auth works for the web frontend (browser → Google sign-in → token), but the CLI can't do a browser-based login flow in a terminal. The team needs to decide:
-- **Option A**: Device auth flow — CLI opens a browser for login, receives a token callback (like `gh auth login`)
-- **Option B**: API key auth — generate a `gl_xxx` API key from the web dashboard, CLI sends it as `Authorization: Bearer gl_xxx`. Simpler for hackathon.
-- **Option C**: Skip auth for CLI, trust localhost — only works for demo, not prod.
-- **Action**: Dev A implements the chosen auth in the CLI setup flow (A6). Dev D ensures the deployed backend supports it.
+**1. CLI Auth — RESOLVED: Firebase removed**
+Firebase was overkill for a CLI hackathon project. Replaced with simple Bearer token auth — the CLI sends `Authorization: Bearer <user-id>` and the backend trusts it. See `apps/api/auth.py`. For production, swap with proper JWT/OAuth.
 
 **2. `POST /v1/keys` endpoint missing — WHO: Dev A (A6)**
 The keystore service (`apps/api/services/keystore.py`) exists but there's no HTTP route to store keys. The setup flow (`greenledger setup`) needs an endpoint to send BYOK keys to. Dev A should create `apps/api/routes/keys.py` with:
@@ -423,8 +419,7 @@ The keystore service (`apps/api/services/keystore.py`) exists but there's no HTT
 allow_origins=["http://localhost:3000", "https://your-app.vercel.app"]
 ```
 
-**4. Same Firebase project — WHO: Everyone**
-Frontend and backend MUST use the same Firebase project. If they don't, auth tokens from the frontend won't verify on the backend. Verify `firebase-service-account.json` matches the frontend's Firebase config.
+**4. ~~Same Firebase project~~ — RESOLVED: Firebase removed**
 
 **5. Backend URL in CLI config — WHO: Dev A + Dev D**
 After deployment (D8), Dev A needs to update the default `backend_url` in CLI config to point to the Railway/Render URL. Currently hardcoded nowhere.
