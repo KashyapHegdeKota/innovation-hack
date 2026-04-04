@@ -108,6 +108,21 @@ class RoutingRequest(BaseModel):
     selected_model: str
 @router.post("/analyze")
 async def analyze_and_route(request: RoutingRequest):
+    prompt_length = len(request.user_prompt.split())
+
+    if prompt_length < 10 and request.selected_model in ["claude-opus-4-6", "o3", "gpt-5.2", "gemini-3.1-pro"]:
+        # If the prompt is very short and the user selected a heavy model, we can route to a lighter one
+        return {
+            "status": "success", 
+            "routing": {"complexity": "low", "recommended_model": "claude-haiku-4-5"}
+        }
+    
+    simple_keywords = ["hello", "hi", "ping", "summarize", "translate"]
+    if any(request.user_prompt.lower().startswith(kw) for kw in simple_keywords):
+        return {
+             "status": "success", 
+             "routing": {"complexity": "low", "recommended_model": "gemini-3.1-flash"}
+        }
     # Eventually, you will pull this context from your Supabase model_benchmarks table
     # (from apps/api/migrations/002_seed_model_benchmarks.sql)
     eco_context = {}
@@ -118,25 +133,33 @@ async def analyze_and_route(request: RoutingRequest):
             "eco_score": m.eco_score
         }
 
+    # Pass a list of valid IDs so Llama knows EXACTLY what to type
+    valid_model_ids = list(eco_context.keys())
+
     system_prompt = f"""
     You are a strict AI Efficiency Router. Your primary job is to save energy and compute costs by downgrading overkill model selections.
     
-    User's Selected Model: {request.selected_model}
+    User's Prompt: "{request.user_prompt}"
+    User's Selected Model: "{request.selected_model}"
     
-    Sustainability Context: 
+    Sustainability Context (Available Models & Energy Costs): 
     {json.dumps(eco_context, indent=2)}
     
     ROUTING RULES:
     1. Evaluate the complexity of the user's prompt (low, medium, high).
-    2. If the task is simple (like summarization, basic math, or short answers) AND the user selected a high-energy model like "gemini-3-pro", you MUST change the recommendation to a low-energy model like "gemini-3-flash".
-    3. You are authorized to override the user's choice to save energy.
+    2. If the task is simple (like summarization, basic math, or "Hello") AND the user selected a standard or heavy model, YOU MUST select a greener alternative from the context (e.g., a "nano" or "light" tier model).
+    3. The recommended_model MUST be one of these exact IDs: {valid_model_ids}
     
     Respond ONLY with a valid JSON object. Example format:
-    {{"complexity": "low", "recommended_model": "gemini-3-flash", "selected_model":{request.selected_model}}}
+    {{
+      "complexity": "low", 
+      "reasoning": "The user just said hello, which requires zero complex reasoning.",
+      "recommended_model": "model_id_from_context"
+    }}
     """
 
     payload = {
-        "model": "llama3.1",
+        "model": "llama3.2",  # Use a small, efficient model for routing decisions
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": request.user_prompt}
