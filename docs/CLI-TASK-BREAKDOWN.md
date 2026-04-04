@@ -402,6 +402,35 @@ Dev D  │ Demo mode│      │ Slash    │      │ Demo     │
 | Slash command handler | Dev D | Dev A (dispatched from main loop) | `handle_command(cmd, state) → str\|None` |
 | Demo mock layer | Dev D | Dev A, Dev B (swap in when `--demo`) | Same interfaces, mock implementations |
 
+### Known Integration Gaps (Must Resolve Before Merge)
+
+**1. CLI Auth — WHO: Dev A + Dev D**
+Firebase auth works for the web frontend (browser → Google sign-in → token), but the CLI can't do a browser-based login flow in a terminal. The team needs to decide:
+- **Option A**: Device auth flow — CLI opens a browser for login, receives a token callback (like `gh auth login`)
+- **Option B**: API key auth — generate a `gl_xxx` API key from the web dashboard, CLI sends it as `Authorization: Bearer gl_xxx`. Simpler for hackathon.
+- **Option C**: Skip auth for CLI, trust localhost — only works for demo, not prod.
+- **Action**: Dev A implements the chosen auth in the CLI setup flow (A6). Dev D ensures the deployed backend supports it.
+
+**2. `POST /v1/keys` endpoint missing — WHO: Dev A (A6)**
+The keystore service (`apps/api/services/keystore.py`) exists but there's no HTTP route to store keys. The setup flow (`greenledger setup`) needs an endpoint to send BYOK keys to. Dev A should create `apps/api/routes/keys.py` with:
+- `POST /v1/keys` — store encrypted BYOK key
+- `GET /v1/keys` — list which providers user has configured (no raw keys)
+- `DELETE /v1/keys/{provider}` — revoke a key
+
+**3. CORS for deployed frontend — WHO: Dev D (D8)**
+`apps/api/main.py` only allows `http://localhost:3000`. When deploying, add the Vercel production URL:
+```python
+allow_origins=["http://localhost:3000", "https://your-app.vercel.app"]
+```
+
+**4. Same Firebase project — WHO: Everyone**
+Frontend and backend MUST use the same Firebase project. If they don't, auth tokens from the frontend won't verify on the backend. Verify `firebase-service-account.json` matches the frontend's Firebase config.
+
+**5. Backend URL in CLI config — WHO: Dev A + Dev D**
+After deployment (D8), Dev A needs to update the default `backend_url` in CLI config to point to the Railway/Render URL. Currently hardcoded nowhere.
+
+---
+
 ### Handoff Protocol
 
 1. **Day 1 end**: Dev A has the loop running with mock inference. Dev B has real grid data + routing. Dev C has all display panels. Dev D has demo mode.
