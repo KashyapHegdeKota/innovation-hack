@@ -4,8 +4,10 @@ node_modules/
 .pnp.js
 apps/web/.next/
 apps/web/out/
-apps/api/__pycache__/
-apps/api/.pytest_cache/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
 apps/api/.venv/
 venv/
 

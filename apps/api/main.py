@@ -33,6 +33,10 @@ app.include_router(orgs.router, prefix="/v1", tags=["Organizations"])
 from .routes import infer  # noqa: E402
 app.include_router(infer.router, prefix="/v1", tags=["Inference & Routing"])
 
+# Dev B: model comparison
+from .routes import models  # noqa: E402
+app.include_router(models.router, prefix="/v1", tags=["Models"])
+
 # Person B: carbon wallets
 from .routes import wallets  # noqa: E402
 app.include_router(wallets.router, prefix="/v1", tags=["Carbon Wallets"])
