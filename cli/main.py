@@ -35,7 +35,6 @@ console = Console()
 
 # ── Config ──────────────────────────────────────────────────────────────────────
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 API_URL           = "https://api.anthropic.com/v1/messages"
 ROUTER_URL        = os.environ.get("ROUTER_URL", "http://localhost:8000/v1/analyze")
 INFER_URL         = os.environ.get("INFER_URL",  "http://localhost:8000/v1/infer")
@@ -55,7 +54,7 @@ MODELS = [
     ModelInfo("gpt-4.1-nano",      "GPT-4.1 Nano",      "openai",    "nano",      0.10, 0.91),
     ModelInfo("gpt-4.1-mini",      "GPT-4.1 Mini",      "openai",    "light",     0.15, 0.86),
     ModelInfo("claude-haiku-4-5",  "Claude Haiku 4.5",  "anthropic", "light",     0.20, 0.89),
-    ModelInfo("gemini-3-flash-preview",  "Gemini 3.1 Flash",  "google",    "light",     0.18, 0.88),
+    ModelInfo("gemini-3.1-flash",  "Gemini 3.1 Flash",  "google",    "light",     0.18, 0.88),
     ModelInfo("claude-sonnet-4-6", "Claude Sonnet 4.6", "anthropic", "standard",  0.24, 0.825),
     ModelInfo("gpt-5.2-mini",      "GPT-5.2 Mini",      "openai",    "standard",  0.30, 0.81),
     ModelInfo("gemini-3.1-pro",    "Gemini 3.1 Pro",    "google",    "standard",  0.28, 0.83),
@@ -247,7 +246,7 @@ TOOLS = [
 ]
 
 
-async def stream_direct(messages: list, cwd: str, model_id: str) -> tuple[str, list]:
+async def stream_anthropic(messages: list, cwd: str, model_id: str) -> tuple[str, list]:
     """Direct Anthropic streaming with tool loop. Returns (text, tool_calls)."""
     renderer = Renderer(console)
     executor = ToolExecutor(cwd, console)
@@ -359,6 +358,132 @@ async def stream_direct(messages: list, cwd: str, model_id: str) -> tuple[str, l
 
     return final_text, tool_calls_made
 
+async def stream_openai(messages: list, cwd: str, model_id: str) -> tuple[str, list]:
+    """Direct OpenAI streaming fallback."""
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    if not api_key:
+        console.print("[bold red]Error:[/] OPENAI_API_KEY not set. Run 'python main.py setup'.")
+        return "", []
+
+    renderer = Renderer(console)
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    # Convert Anthropic-style messages to OpenAI format (they're compatible for basic text)
+    oai_messages = [{"role": "system", "content": SYSTEM_PROMPT.format(cwd=cwd)}] + messages
+    payload = {
+        "model": model_id,  # e.g. "gpt-4.1-nano" — OpenAI accepts these directly
+        "messages": oai_messages,
+        "max_tokens": 8096,
+        "stream": True,
+    }
+    final_text = ""
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        async with client.stream("POST", "https://api.openai.com/v1/chat/completions",
+                                  headers=headers, json=payload) as resp:
+            if resp.status_code != 200:
+                body = await resp.aread()
+                console.print(f"[bold red]OpenAI Error {resp.status_code}:[/] {body.decode()}")
+                return "", []
+
+            async for line in resp.aiter_lines():
+                if not line.startswith("data: "):
+                    continue
+                raw = line[6:]
+                if raw == "[DONE]":
+                    break
+                try:
+                    event = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                delta = event.get("choices", [{}])[0].get("delta", {})
+                chunk = delta.get("content", "")
+                if chunk:
+                    final_text += chunk
+                    renderer.stream_text(chunk)
+
+    renderer.flush_text()
+    return final_text, []
+
+
+async def stream_gemini(messages: list, cwd: str, model_id: str) -> tuple[str, list]:
+    """Direct Gemini streaming fallback."""
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        console.print("[bold red]Error:[/] GEMINI_API_KEY not set. Run 'python main.py setup'.")
+        return "", []
+
+    renderer = Renderer(console)
+
+    # Convert to Gemini's `contents` format
+    contents = []
+    for m in messages:
+        role = "user" if m["role"] == "user" else "model"
+        contents.append({"role": role, "parts": [{"text": m["content"]}]})
+
+    # Prepend system instruction as a user/model exchange (Gemini's way)
+    system_turn = [
+        {"role": "user",  "parts": [{"text": SYSTEM_PROMPT.format(cwd=cwd)}]},
+        {"role": "model", "parts": [{"text": "Understood."}]},
+    ]
+
+    payload = {
+        "contents": system_turn + contents,
+        "generationConfig": {"maxOutputTokens": 8096},
+    }
+    # For now, strip our internal prefix and let the API validate.
+    GEMINI_MODEL_MAP = {
+        "gemini-3.1-flash": "gemini-3.1-flash-lite-preview",
+        "gemini-3.1-pro":   "gemini-3.1-pro-preview",
+    }
+    gemini_model = GEMINI_MODEL_MAP.get(model_id, model_id)
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{gemini_model}:streamGenerateContent?alt=sse&key={api_key}"
+    )
+    final_text = ""
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        async with client.stream("POST", url, json=payload) as resp:
+            if resp.status_code != 200:
+                body = await resp.aread()
+                console.print(f"[bold red]Gemini Error {resp.status_code}:[/] {body.decode()}")
+                return "", []
+
+            async for line in resp.aiter_lines():
+                if not line.startswith("data: "):
+                    continue
+                raw = line[6:]
+                try:
+                    event = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                chunk = (
+                    event.get("candidates", [{}])[0]
+                         .get("content", {})
+                         .get("parts", [{}])[0]
+                         .get("text", "")
+                )
+                if chunk:
+                    final_text += chunk
+                    renderer.stream_text(chunk)
+
+    renderer.flush_text()
+    return final_text, []
+
+
+def get_stream_fn(model_id: str):
+    """Return the right streaming function for a model's provider."""
+    info = MODEL_INDEX.get(model_id)
+    if info is None:
+        return stream_anthropic  # best-effort fallback
+    return {
+        "anthropic": stream_anthropic,
+        "openai":    stream_openai,
+        "google":    stream_gemini,
+    }.get(info.provider, stream_anthropic)
 # ── UI Components ────────────────────────────────────────────────────────────────
 
 def energy_bar(energy_wh: float, max_wh: float = 33.0, width: int = 10) -> str:
@@ -729,7 +854,8 @@ async def main():
                 messages.append({"role": "assistant", "content": infer_result.get("text", "")})
             else:
                 # Direct Anthropic streaming fallback
-                final_text, _ = await stream_direct(messages, cwd, final_model)
+                stream_fn = get_stream_fn(final_model)
+                final_text, _ = await stream_fn(messages, cwd, final_model)
                 latency_ms    = round((time.time() - t0) * 1000)
                 
                 # Estimate tokens for the fallback since we don't get exact API stats via stream
@@ -750,8 +876,6 @@ async def main():
             # Pass the tokens into the render function!
             render_receipt(receipt, final_model, latency_ms, tok_in, tok_out)
             stats.add_receipt(receipt)
-            model_id = final_model
-            
         except KeyboardInterrupt:
             console.print("\n[dim]Use '/exit' or 'exit' to quit.[/]")
             continue

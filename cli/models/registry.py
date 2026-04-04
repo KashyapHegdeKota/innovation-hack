@@ -46,7 +46,7 @@ MODELS: list[ModelInfo] = [
         energy_per_1k_tokens_wh=0.13,
     ),
     ModelInfo(
-        id="gemini-3.1-flash",
+        id="gemini-3.1-flash-lite-preview",
         display="Gemini 3.1 Flash",
         provider="google",
         tier="light",
