@@ -22,7 +22,8 @@ Before splitting into individual tracks, the whole team does this together:
 - [ ] Install shared dependencies: `rich`, `prompt_toolkit`, `click`, `httpx`, `pydantic`
 - [ ] Create `cli/models/schemas.py` with shared types (extend from existing `apps/api/models/schemas.py`)
 - [ ] Create `cli/config.py` with `CLIConfig` loading from `~/.greenledger/config.yaml`
-- [ ] Create `.env.example` with required API keys (Anthropic, OpenAI)
+- [ ] Create `.env.example` for backend: `SUPABASE_URL`, `SUPABASE_KEY`, `FIREBASE_*`, `ENCRYPTION_KEY` (for BYOK key storage), `ANTHROPIC_API_KEY` (for analyzer only)
+- [ ] Set up Railway or Render project linked to GitHub repo for auto-deploy
 - [ ] Each person creates their own feature branch: `feat/cli-core`, `feat/providers-backend`, `feat/budget-display`, `feat/demo-polish`
 
 ---
@@ -77,13 +78,20 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 3
 
-- [ ] **A6: Streaming Response Display** (`cli/display/response.py`)
+- [ ] **A6: Setup Flow** (`cli/commands/setup.py`)
+  - `greenledger setup` — interactive first-run: prompt for GreenLedger API key, then each provider key (Anthropic, OpenAI)
+  - Sends keys to `POST /v1/keys` on hosted backend
+  - Saves GreenLedger API key + backend URL to `~/.greenledger/config.yaml`
+  - Validates each key works before storing (test call to provider)
+  - **Test**: Run setup, provide keys, verify stored on backend
+
+- [ ] **A7: Streaming Response Display** (`cli/display/response.py`)
   - If provider supports streaming, show tokens as they arrive (like Claude Code)
   - Render inside a Rich panel with green border
   - Show a spinner while waiting for first token
   - **Test**: Response streams token by token in the terminal
 
-- [ ] **A7: Analyzer Prompt Tuning**
+- [ ] **A8: Analyzer Prompt Tuning**
   - Test analyzer with 20+ diverse prompts:
     - "Hi" (simple)
     - "Explain quantum computing" (medium)
@@ -109,10 +117,10 @@ Before splitting into individual tracks, the whole team does this together:
   - Include provider carbon intensity constants (avg gCO2e/kWh per provider)
   - **Test**: All 6+ models have complete benchmark data, constants match published sources
 
-- [ ] **B2: AI Provider Wrappers** (`cli/models/providers.py`)
-  - Anthropic wrapper: call Claude models via `anthropic` SDK
-  - OpenAI wrapper: call GPT models via `openai` SDK
-  - Unified interface: `execute_inference(model_id, prompt, max_tokens) → InferenceResult`
+- [ ] **B2: AI Provider Wrappers** (`apps/api/services/providers.py`)
+  - Anthropic wrapper: call Claude models via `anthropic` SDK using user's decrypted BYOK key
+  - OpenAI wrapper: call GPT models via `openai` SDK using user's decrypted BYOK key
+  - Unified interface: `execute_inference(model_id, prompt, max_tokens, user_api_key) → InferenceResult`
   - Capture: response text, tokens_in, tokens_out, latency_ms
   - Support streaming (yield chunks for Dev A's streaming display)
   - **Test**: Send "Hello" to Haiku, get a response back with token counts
@@ -126,7 +134,14 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 2
 
-- [ ] **B4: Implement POST /v1/analyze Endpoint** (`apps/api/routes/analyze.py`)
+- [ ] **B4: BYOK Key Storage** (`apps/api/routes/keys.py`, `apps/api/services/keystore.py`)
+  - `POST /v1/keys` — accept + encrypt (Fernet/AES-256) user's provider API keys, store in Supabase
+  - `GET /v1/keys` — return which providers the user has configured (no raw keys)
+  - `DELETE /v1/keys/:provider` — revoke a stored key
+  - Encryption key from `ENCRYPTION_KEY` env var
+  - **Test**: Store a key, retrieve it decrypted server-side, verify it works against provider
+
+- [ ] **B5: Implement POST /v1/analyze Endpoint** (`apps/api/routes/analyze.py`)
   - New endpoint that wraps the analyzer LLM
   - Input: prompt, selected_model, agent_id (optional)
   - Calls the analyzer LLM (same logic as Dev A's `analyzer.py` but server-side)
@@ -134,16 +149,17 @@ Before splitting into individual tracks, the whole team does this together:
   - Returns: AnalyzeResponse with suggestions + budget status
   - **Test**: POST to /v1/analyze with a simple prompt, get valid analysis back
 
-- [ ] **B5: Wire POST /v1/infer** (`apps/api/routes/infer.py`)
-  - Implement the full pipeline that was stubbed:
-    1. Wallet check (call Dev C's wallet, or skip if no agent_id)
-    2. Execute inference (call provider wrapper)
-    3. Generate receipt (call Dev C's receipt service)
-    4. Deduct wallet
-    5. Return InferResponse
+- [ ] **B6: Wire POST /v1/infer** (`apps/api/routes/infer.py`)
+  - Implement the full pipeline:
+    1. Decrypt user's BYOK key for selected provider
+    2. Budget check
+    3. Execute inference using user's key
+    4. Generate receipt
+    5. Deduct budget
+    6. Return InferResponse
   - **Test**: POST to /v1/infer with prompt + model, get response + receipt
 
-- [ ] **B6: Provider Error Handling + Fallback**
+- [ ] **B7: Provider Error Handling + Fallback**
   - Handle: rate limits, timeouts, auth errors, model not available
   - If a provider is down, surface a clear error (don't crash the CLI)
   - Return structured errors that Dev A can display nicely
@@ -151,13 +167,13 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 3
 
-- [ ] **B7: Multi-Provider Model Comparison**
+- [ ] **B8: Multi-Provider Model Comparison**
   - `/models` command data: for equivalent tiers, show cross-provider comparison
   - Example: "standard" tier → Sonnet (0.24 Wh, Anthropic) vs GPT-4o (0.34 Wh, OpenAI)
   - Rank by eco-efficiency within each tier
   - **Test**: `/models` shows sorted list with energy + eco-score per model
 
-- [ ] **B8: Streaming Support**
+- [ ] **B9: Streaming Support**
   - Implement async generator for streaming responses from Anthropic + OpenAI
   - Yield chunks as they arrive so Dev A can display token-by-token
   - Track token count incrementally during stream
@@ -314,7 +330,14 @@ Before splitting into individual tracks, the whole team does this together:
   - This connects the CLI to the existing Next.js frontend
   - **Test**: Upload a session JSON, see charts render
 
-- [ ] **D8: README + Setup Guide**
+- [ ] **D8: Deploy Backend to Railway/Render**
+  - Configure `railway.json` or `render.yaml` for auto-deploy
+  - Set env vars: `SUPABASE_URL`, `SUPABASE_KEY`, `ENCRYPTION_KEY`, `ANTHROPIC_API_KEY` (analyzer)
+  - Verify `/health` endpoint works on deployed URL
+  - Update `cli/config.py` default `backend_url` to deployed URL
+  - **Test**: CLI on local machine talks to deployed backend end-to-end
+
+- [ ] **D9: README + Setup Guide**
   - Update project README with:
     - What GreenLedger CLI is (2 paragraphs)
     - Quick start: install deps, set API keys, run

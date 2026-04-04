@@ -37,7 +37,9 @@ $ greenledger
   >
 ```
 
-The CLI loads the user's session config (API keys, budget limits, preferred providers). Budget is shown at all times in a status bar — like a bank balance for planetary impact.
+The CLI loads the user's config (GreenLedger API key, budget limits). On first run, the user provides their own provider API keys (Anthropic, OpenAI) which are stored encrypted on the GreenLedger backend. Budget is shown at all times in a status bar — like a bank balance for planetary impact.
+
+**BYOK (Bring Your Own Key)**: Users provide their own LLM provider API keys. GreenLedger never pays for inference — it just routes, analyzes, and tracks. Keys are sent once during setup and stored encrypted server-side.
 
 ---
 
@@ -352,8 +354,8 @@ User types prompt + selects model
 
 The hackathon asks for: **actionable today, scalable tomorrow.**
 
-- **Actionable today**: Any developer can use this CLI right now to make their AI usage carbon-conscious. No infrastructure changes needed.
-- **Scalable tomorrow**: The analyzer LLM + Green Router core becomes the engine behind the SDK, API, and enterprise dashboard.
+- **Actionable today**: Any developer can use this CLI right now to make their AI usage carbon-conscious. BYOK model — bring your own API keys, no vendor lock-in.
+- **Scalable tomorrow**: The analyzer LLM + model selection engine becomes the core behind an SDK, API, and enterprise dashboard. Hosted on Railway/Render, scales with users.
 - **Innovation**: The analyzer LLM that evaluates model-task fit for sustainability is novel — nobody is doing this.
 - **Environmental impact**: Measurable per-query, compounding over sessions.
 - **Technical execution**: Real AI provider APIs, real model energy benchmarks from published research, real carbon calculations.

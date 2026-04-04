@@ -41,7 +41,64 @@ How the analyzer LLM works, how the CLI selects models, and how every piece conn
    └─────────────────┘    └──────────────────┘   └──────────────────┘
 ```
 
-**Note on region routing**: We do NOT control which datacenter/region serves an API request. Cloud providers (AWS, Azure, GCP) use their own load balancers to route requests. Therefore, our primary carbon lever is **model selection** — choosing the right-sized model for the task — not region selection. The 100x energy difference between a nano model and a reasoning model dwarfs any regional grid variation.
+**Key design decisions:**
+
+- **No region routing**: We do NOT control which datacenter serves an API request — cloud providers handle load balancing. Our primary carbon lever is **model selection** (100x energy range between nano and reasoning models).
+- **BYOK (Bring Your Own Key)**: Users provide their own Anthropic/OpenAI API keys. GreenLedger never pays for inference. Keys are stored encrypted on the backend.
+- **Hosted backend**: FastAPI deployed on Railway/Render. The CLI is a thin TUI client that talks to the hosted API over HTTPS.
+
+---
+
+## Hosting Architecture
+
+```
+┌──────────────────┐        HTTPS        ┌──────────────────────────────┐
+│  GreenLedger CLI │ ◄─────────────────► │  GreenLedger Backend         │
+│  (user's machine)│                     │  (Railway / Render)          │
+│                  │                     │                              │
+│  Rich TUI        │                     │  FastAPI                     │
+│  Prompt input    │                     │  ├── POST /v1/analyze        │
+│  Display panels  │                     │  ├── POST /v1/infer          │
+│                  │                     │  ├── GET  /v1/budget         │
+│                  │                     │  ├── POST /v1/keys (setup)   │
+│                  │                     │  └── GET  /v1/receipts       │
+└──────────────────┘                     │                              │
+                                         │  Calls providers using       │
+                                         │  user's stored API keys      │
+                                         │                              │
+                                         │  ┌────────────────────────┐  │
+                                         │  │ Supabase (PostgreSQL)  │  │
+                                         │  │ - users, keys (enc.)   │  │
+                                         │  │ - budgets, receipts    │  │
+                                         │  │ - model benchmarks     │  │
+                                         │  └────────────────────────┘  │
+                                         └──────────────┬───────────────┘
+                                                        │
+                                         ┌──────────────┴───────────────┐
+                                         │  LLM Provider APIs           │
+                                         │  (using user's BYOK keys)    │
+                                         │                              │
+                                         │  Anthropic  OpenAI  Google   │
+                                         └──────────────────────────────┘
+```
+
+### BYOK Key Flow
+
+1. User runs `greenledger setup` → prompted for provider API keys
+2. Keys sent to backend via `POST /v1/keys` over HTTPS
+3. Backend encrypts keys at rest (Fernet/AES-256) and stores in Supabase
+4. On every `/v1/infer` call, backend decrypts the user's key for the selected provider
+5. Backend calls the provider API using the user's key
+6. User can update/revoke keys anytime via `greenledger config --keys`
+
+### Deployment
+
+| Component | Platform | Why |
+|-----------|----------|-----|
+| FastAPI backend | **Railway** or **Render** | Free tier, auto-deploy from GitHub, supports Python |
+| PostgreSQL | **Supabase** (already configured) | Free tier, existing project |
+| Frontend dashboard (optional) | **Vercel** | Free tier, existing Next.js app |
+| CLI distribution | **PyPI** (`pip install greenledger`) | Standard Python distribution |
 
 ---
 
@@ -292,35 +349,27 @@ class SessionState:
 
 The CLI can either call a backend API or run everything locally. For the hackathon, everything runs locally in the CLI process — no separate backend server needed.
 
-**CLI-local flow** (hackathon):
-```
-CLI Process
- │
- ├── 1. Analyzer LLM call (Haiku via API / Ollama local)
- │      → task classification + model recommendation
- │
- ├── 2. User decision (accept/override)
- │
- ├── 3. Inference call (selected provider API)
- │      → response + token counts
- │
- └── 4. Local receipt generation
-        → CO2/energy/water calculation from model benchmarks
-```
+**All requests flow through the hosted backend** — the CLI is a thin TUI client:
 
-**Backend flow** (post-hackathon, optional):
 ```
-CLI                         Backend
+CLI (thin client)           Hosted Backend (Railway/Render)
  │                            │
- ├── POST /v1/analyze ───────►│  (analyzer LLM)
+ ├── POST /v1/keys ──────────►│  (one-time: store user's BYOK keys)
+ │                            │
+ ├── POST /v1/analyze ───────►│  (analyzer LLM call using our Haiku key)
  │◄── analysis result ────────┤
  │                            │
  │  [user picks model]        │
  │                            │
- ├── POST /v1/infer ─────────►│  (execute + receipt)
+ ├── POST /v1/infer ─────────►│  (execute using user's BYOK key + receipt)
  │◄── response + receipt ─────┤
  │                            │
+ ├── GET  /v1/budget ────────►│  (budget status from Supabase)
+ │◄── budget data ────────────┤
+ │                            │
 ```
+
+**Note on the analyzer**: The analyzer LLM (Haiku) runs on GreenLedger's own API key — it's a platform cost, not a user cost. This is the one key we hold ourselves. All other inference uses the user's BYOK keys.
 
 ### Backend Endpoint: POST /v1/analyze (optional)
 
@@ -500,32 +549,20 @@ For the hackathon, budget is tracked locally in the CLI session state + a local 
 
 ```yaml
 # ~/.greenledger/config.yaml
+api_key: gl_abc123...          # GreenLedger API key (authenticates to hosted backend)
+backend_url: https://greenledger-api.up.railway.app  # hosted backend
+
 budget:
   monthly_co2e_g: 50.0
   monthly_energy_wh: 20.0
   monthly_water_ml: 10.0
-  on_exceeded: warn      # warn | downgrade | block
-
-providers:
-  anthropic:
-    api_key: ${ANTHROPIC_API_KEY}
-  openai:
-    api_key: ${OPENAI_API_KEY}
-
-analyzer:
-  provider: anthropic
-  model: claude-haiku-4-5
-  # Or for local:
-  # provider: ollama
-  # model: llama3.1
+  on_exceeded: warn            # warn | downgrade | block
 
 defaults:
   default_model: claude-sonnet-4-6
 ```
 
-### Server Mode (Post-Hackathon)
-
-When connected to the GreenLedger backend, budget is tracked server-side via the Carbon Wallet API. The CLI calls `GET /v1/wallets/:agent_id` on startup and after every query.
+Provider API keys (Anthropic, OpenAI) are stored server-side after `greenledger setup`, NOT in local config. Budget is tracked server-side in Supabase via the backend API. The CLI calls `GET /v1/budget` on startup and after every query.
 
 ---
 
