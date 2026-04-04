@@ -1,65 +1,70 @@
-# Innovation Hacks: Production-Ready Monorepo Template
+# GreenLedger
 
-A hackathon-optimized monorepo featuring **Next.js** (Frontend), **FastAPI** (Backend), **Supabase** (Database), and **Firebase Auth** (Authentication).
+**The carbon-aware infrastructure layer for the agentic AI economy.**
+
+GreenLedger is a sustainability layer that sits between AI agents and model providers. It ensures every AI action is environmentally accountable through real-time model routing, carbon budgeting, and automated carbon levies.
+
+---
 
 ## 🚀 Quick Start
 
 ### 1. Prerequisites
 - Node.js (v18+)
-- Python (3.9+)
-- Firebase Project
-- Supabase Project
+- Python (3.11+)
+- API Keys for AI Providers (Anthropic, OpenAI, or Google)
 
-### 2. Environment Setup
+### 2. Launch the CLI
+The fastest way to experience GreenLedger is through our interactive terminal interface.
 
-#### Frontend (`apps/web`)
-Create `apps/web/.env` based on `apps/web/.env.example`:
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
-NEXT_PUBLIC_API_URL=http://localhost:8000
+```bash
+# Install dependencies
+pip install -e .
+
+# Launch the CLI in a new terminal window
+python cli/launch.py
 ```
+*For more details, see the [CLI README](./cli/README.md).*
+
+### 3. Setup Backend & Frontend
 
 #### Backend (`apps/api`)
-Create `apps/api/.env` based on `apps/api/.env.example`:
-```env
-SUPABASE_URL=...
-SUPABASE_SERVICE_ROLE_KEY=...
-FIREBASE_SERVICE_ACCOUNT_JSON=firebase-service-account.json
-```
-**Important:** Download your Firebase Service Account JSON from the Firebase Console (Project Settings > Service Accounts) and place it in `apps/api/firebase-service-account.json`.
-
-### 3. Installation & Running
-
-#### Start Backend
+Create `apps/api/.env` based on `apps/api/.env.example`.
 ```bash
 cd apps/api
 pip install -r requirements.txt
 python main.py
 ```
 
-#### Start Frontend
+#### Frontend (`apps/web`)
+Create `apps/web/.env` based on `apps/web/.env.example`.
 ```bash
 cd apps/web
 npm install
 npm run dev
 ```
 
-## 🏗️ Architecture
+---
 
-- **Auth Flow:** Next.js uses Firebase Client SDK for login. A JWT is retrieved and sent in the `Authorization: Bearer` header.
-- **Backend Security:** FastAPI verifies the JWT using the Firebase Admin SDK. The user's `uid` is injected into protected routes.
-- **Database:** Supabase is accessed via the Python client using the `SERVICE_ROLE_KEY`. All queries are filtered by `author_id` (Firebase UID) to ensure data isolation.
+## 🏗️ Architecture & Features
+
+- **Green Router:** Automatically selects the most eco-efficient model for any given task.
+- **Carbon Wallet:** Enforces carbon budgets per agent, team, or organization.
+- **Environmental Receipts:** Standardized accounting of CO2e, water, and energy for every query.
+- **Carbon Levy Protocol:** Automatically routes micro-contributions to verified carbon removal.
+- **Sustainability Dashboard:** High-level visibility into your AI infrastructure's planetary impact.
+
+---
 
 ## 🛠️ Tech Stack
-- **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS, Axios, Lucide React
-- **Backend:** FastAPI, Firebase Admin SDK, Supabase Python Client
-- **Database:** Supabase (PostgreSQL)
-- **Auth:** Firebase Authentication (Google Sign-In)
+- **Frontend:** Next.js 14, TypeScript, Tailwind CSS
+- **Backend:** FastAPI, Pydantic, Supabase
+- **CLI:** Rich, Prompt Toolkit, Click
+- **AI Integration:** Anthropic, OpenAI, Google GenAI SDKs
+
+---
 
 ## 📄 Documentation
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - Branching strategy and commit rules.
+- [Technical Deep Dive](./docs/CLI-DEEP-DIVE.md)
+- [Architecture Overview](./docs/ARCHITECTURE.md)
+- [Product Workflow](./docs/CLI-PRODUCT-WORKFLOW.md)
+- [Green Router Deep Dive](./docs/GREEN-ROUTER-DEEP-DIVE.md)

@@ -28,6 +28,19 @@ A running API where you can create an org, register agents, and create carbon wa
 
 ---
 
+## Phase 0.5: CLI Prototype (Completed)
+
+**Goal:** A functional terminal-based interface for sustainable AI inference.
+
+- [x] **TUI Core**: Built with Rich and Prompt Toolkit for an interactive, styled experience.
+- [x] **Smart Model Router**: Integrated "Analyzer" that suggests eco-efficient models based on prompt complexity.
+- [x] **Environmental Accounting**: Real-time tracking of CO2e, energy, and water usage per query.
+- [x] **Receipt Engine**: Visual receipts printed after every AI response.
+- [x] **BYOK Setup**: Encrypted storage for user-provided API keys (Anthropic, OpenAI, Google).
+- [x] **Slash Commands**: `/help`, `/models`, `/budget`, `/history`, `/session` for deep visibility.
+
+---
+
 ## Phase 1: Green Router (Week 2-3)
 
 **Goal:** AI inference routing based on carbon intensity and model efficiency.
