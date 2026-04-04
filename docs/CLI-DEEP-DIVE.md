@@ -59,6 +59,7 @@ How the analyzer LLM works, how the CLI selects models, and how every piece conn
 │  Rich TUI        │                     │  FastAPI                     │
 │  Prompt input    │                     │  ├── POST /v1/analyze        │
 │  Display panels  │                     │  ├── POST /v1/infer          │
+│                  │                     │  ├── GET  /v1/models         │
 │                  │                     │  ├── GET  /v1/budget         │
 │                  │                     │  ├── POST /v1/keys (setup)   │
 │                  │                     │  └── GET  /v1/receipts       │
@@ -572,54 +573,22 @@ The CLI loads the model list from the backend's `model_benchmarks` table (or a l
 
 ```python
 MODELS = [
-    ModelInfo(
-        id="claude-opus-4-6",
-        display="Claude Opus 4.6",
-        provider="anthropic",
-        tier="heavy",
-        energy_wh=1.0,
-        eco_score=0.72,
-    ),
-    ModelInfo(
-        id="claude-sonnet-4-6",
-        display="Claude Sonnet 4.6",
-        provider="anthropic",
-        tier="standard",
-        energy_wh=0.24,
-        eco_score=0.825,
-    ),
-    ModelInfo(
-        id="claude-haiku-4-5",
-        display="Claude Haiku 4.5",
-        provider="anthropic",
-        tier="light",
-        energy_wh=0.20,
-        eco_score=0.89,
-    ),
-    ModelInfo(
-        id="gpt-4.1",
-        display="GPT-4.1",
-        provider="openai",
-        tier="heavy",
-        energy_wh=0.50,
-        eco_score=0.78,
-    ),
-    ModelInfo(
-        id="gpt-4.1-mini",
-        display="GPT-4.1 mini",
-        provider="openai",
-        tier="light",
-        energy_wh=0.15,
-        eco_score=0.86,
-    ),
-    ModelInfo(
-        id="gpt-4.1-nano",
-        display="GPT-4.1 nano",
-        provider="openai",
-        tier="nano",
-        energy_wh=0.10,
-        eco_score=0.91,
-    ),
+    # --- Nano ---
+    ModelInfo(id="gpt-4.1-nano", display="GPT-4.1 nano", provider="openai", tier="nano", energy_wh=0.10, eco_score=0.91),
+    # --- Light ---
+    ModelInfo(id="gpt-4.1-mini", display="GPT-4.1 mini", provider="openai", tier="light", energy_wh=0.15, eco_score=0.86),
+    ModelInfo(id="claude-haiku-4-5", display="Claude Haiku 4.5", provider="anthropic", tier="light", energy_wh=0.20, eco_score=0.89),
+    ModelInfo(id="gemini-3.1-flash", display="Gemini 3.1 Flash", provider="google", tier="light", energy_wh=0.18, eco_score=0.88),
+    # --- Standard ---
+    ModelInfo(id="claude-sonnet-4-6", display="Claude Sonnet 4.6", provider="anthropic", tier="standard", energy_wh=0.24, eco_score=0.825),
+    ModelInfo(id="gpt-5.2-mini", display="GPT-5.2 mini", provider="openai", tier="standard", energy_wh=0.30, eco_score=0.81),
+    ModelInfo(id="gemini-3.1-pro", display="Gemini 3.1 Pro", provider="google", tier="standard", energy_wh=0.28, eco_score=0.83),
+    # --- Heavy ---
+    ModelInfo(id="gpt-5.2", display="GPT-5.2", provider="openai", tier="heavy", energy_wh=0.55, eco_score=0.77),
+    ModelInfo(id="claude-opus-4-6", display="Claude Opus 4.6", provider="anthropic", tier="heavy", energy_wh=1.0, eco_score=0.72),
+    # --- Reasoning ---
+    ModelInfo(id="o3-mini", display="o3-mini", provider="openai", tier="reasoning", energy_wh=3.0, eco_score=0.884),
+    ModelInfo(id="o3", display="o3", provider="openai", tier="reasoning", energy_wh=33.0, eco_score=0.758),
 ]
 ```
 
@@ -666,7 +635,64 @@ In demo mode:
 
 ---
 
-## 10. Key Files (New for CLI)
+## 10. Dev B Implementation Status (Complete)
+
+All Dev B tasks are implemented and tested (31+ tests passing). Other devs can integrate with these:
+
+### Files Implemented by Dev B
+
+| File | Task | What It Does |
+|------|------|-------------|
+| `cli/models/registry.py` | B1 | 11 models across 5 tiers (nano/light/standard/heavy/reasoning), 3 providers (Anthropic, OpenAI, Google). `get_model(id)` and `get_models_by_tier(tier)` |
+| `cli/utils/carbon.py` | B3 | CO2e, water, levy estimation from model benchmarks + provider averages. `estimate_query_cost(model_id, tokens_in, tokens_out) → QueryCost` |
+| `apps/api/services/keystore.py` | B4 | BYOK key encryption (Fernet/AES-256). `KeyStore.store_key()`, `.get_key()`, `.delete_key()`. In-memory for hackathon, swap to Supabase for prod |
+| `apps/api/services/providers.py` | B2 | Unified `execute_inference(model_id, prompt, max_tokens, api_key) → InferenceResult`. Supports Anthropic, OpenAI, Google GenAI SDKs |
+| `apps/api/services/streaming.py` | B9 | `stream_inference()` async generator yielding `StreamChunk` objects. Supports Anthropic + OpenAI streaming. Dev A can iterate chunks for token-by-token display |
+| `apps/api/routes/infer.py` | B6 | `POST /v1/infer` — validates model → gets BYOK key → executes → generates receipt → returns response + receipt |
+| `apps/api/routes/models.py` | B8 | `GET /v1/models?tier=light&provider=anthropic` — lists models sorted by eco_score. Dev D can use this for `/models` command |
+| `pyproject.toml` | Setup | All deps. Install with `pip install -e ".[dev]"` |
+
+### Integration Points for Other Devs
+
+**Dev A** needs:
+- `from apps.api.services.providers import execute_inference, InferenceResult` — for real inference calls
+- `from apps.api.services.streaming import stream_inference, StreamChunk` — for token-by-token streaming display
+- `from cli.models.registry import get_model, MODELS` — for model picker
+
+**Dev C** needs:
+- `from cli.utils.carbon import estimate_query_cost, QueryCost` — for receipt generation
+- `from cli.models.registry import ModelInfo, get_model` — for model energy data
+
+**Dev D** needs:
+- `GET /v1/models` endpoint — for `/models` slash command
+- `from cli.models.registry import MODELS` — for demo mock data
+
+### Supported Models (from `cli/models/registry.py`)
+
+| Model ID | Display | Provider | Tier | Energy (Wh/query) | Eco Score |
+|----------|---------|----------|------|-------------------|-----------|
+| gpt-4.1-nano | GPT-4.1 nano | OpenAI | nano | 0.10 | 0.91 |
+| gpt-4.1-mini | GPT-4.1 mini | OpenAI | light | 0.15 | 0.86 |
+| claude-haiku-4-5 | Claude Haiku 4.5 | Anthropic | light | 0.20 | 0.89 |
+| gemini-3.1-flash | Gemini 3.1 Flash | Google | light | 0.18 | 0.88 |
+| claude-sonnet-4-6 | Claude Sonnet 4.6 | Anthropic | standard | 0.24 | 0.825 |
+| gpt-5.2-mini | GPT-5.2 mini | OpenAI | standard | 0.30 | 0.81 |
+| gemini-3.1-pro | Gemini 3.1 Pro | Google | standard | 0.28 | 0.83 |
+| gpt-5.2 | GPT-5.2 | OpenAI | heavy | 0.55 | 0.77 |
+| claude-opus-4-6 | Claude Opus 4.6 | Anthropic | heavy | 1.00 | 0.72 |
+| o3-mini | o3-mini | OpenAI | reasoning | 3.00 | 0.884 |
+| o3 | o3 | OpenAI | reasoning | 33.0 | 0.758 |
+
+### SDK Syntax (Verified)
+
+All provider SDKs use correct, current syntax:
+- **Anthropic**: `client.messages.create()` / `client.messages.stream()` — works for claude-sonnet-4-6, claude-opus-4-6, claude-haiku-4-5
+- **OpenAI**: `client.chat.completions.create()` — works for gpt-5.2, gpt-4.1 models. (Newer Responses API also available but Chat Completions is fully supported)
+- **Google GenAI**: `client.aio.models.generate_content()` — works for gemini-3.1-flash, gemini-3.1-pro
+
+---
+
+## 11. Key Files (New for CLI)
 
 ```
 cli/
