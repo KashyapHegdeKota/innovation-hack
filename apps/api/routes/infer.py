@@ -12,8 +12,10 @@ from pydantic import BaseModel
 from ..auth import get_current_user
 from ..services.providers import execute_inference, ProviderError
 from ..services.keystore import KeyStore
-from cli.models.registry import get_model
+from cli.models.registry import MODELS, get_model
 from cli.utils.carbon import estimate_query_cost
+import json
+import httpx 
 
 router = APIRouter()
 
@@ -99,3 +101,60 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
         latency_ms=result.latency_ms,
         receipt=receipt,
     )
+OLLAMA_URL = "http://137.131.24.56:11434/api/chat"
+
+class RoutingRequest(BaseModel):
+    user_prompt: str
+    selected_model: str
+@router.post("/analyze")
+async def analyze_and_route(request: RoutingRequest):
+    # Eventually, you will pull this context from your Supabase model_benchmarks table
+    # (from apps/api/migrations/002_seed_model_benchmarks.sql)
+    eco_context = {}
+    for m in MODELS:
+        eco_context[m.id] = {
+            "tier": m.tier,
+            "energy_wh": m.energy_wh,
+            "eco_score": m.eco_score
+        }
+
+    system_prompt = f"""
+    You are a strict AI Efficiency Router. Your primary job is to save energy and compute costs by downgrading overkill model selections.
+    
+    User's Selected Model: {request.selected_model}
+    
+    Sustainability Context: 
+    {json.dumps(eco_context, indent=2)}
+    
+    ROUTING RULES:
+    1. Evaluate the complexity of the user's prompt (low, medium, high).
+    2. If the task is simple (like summarization, basic math, or short answers) AND the user selected a high-energy model like "gemini-3-pro", you MUST change the recommendation to a low-energy model like "gemini-3-flash".
+    3. You are authorized to override the user's choice to save energy.
+    
+    Respond ONLY with a valid JSON object. Example format:
+    {{"complexity": "low", "recommended_model": "gemini-3-flash"}}
+    """
+
+    payload = {
+        "model": "llama3.1",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.user_prompt}
+        ],
+        "stream": False,
+        "format": "json" # Forces Llama to output valid JSON
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            # Send the request to your VM
+            response = await client.post(OLLAMA_URL, json=payload, timeout=90.0)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Parse Llama's JSON response
+            decision = json.loads(data["message"]["content"])
+            return {"status": "success", "routing": decision}
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to reach VM router: {repr(e)}")

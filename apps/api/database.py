@@ -1,8 +1,10 @@
-"""Database stub — no external DB needed for hackathon.
+from supabase import create_client, Client
+from pydantic_settings import BaseSettings
+import os
 
-All state is in-memory (keystore, session, model registry).
-For production: swap with Supabase, PostgreSQL, or any DB client.
-"""
+class DatabaseSettings(BaseSettings):
+    SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
+    SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 
 def get_supabase_client():
