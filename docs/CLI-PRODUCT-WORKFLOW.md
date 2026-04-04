@@ -49,12 +49,15 @@ The CLI loads the user's config (GreenLedger API key, budget limits). On first r
   > Explain quantum computing in simple terms
 
   Select model:
-    [1] Claude Opus 4.6     (heavy)     ~1.0 Wh/query   ████████░░
-    [2] Claude Sonnet 4.6   (standard)  ~0.24 Wh/query  ████░░░░░░
-    [3] Claude Haiku 4.5    (light)     ~0.20 Wh/query  ███░░░░░░░
-    [4] GPT-4.1             (heavy)     ~0.50 Wh/query  ██████░░░░
-    [5] GPT-4.1 mini        (light)     ~0.15 Wh/query  ██░░░░░░░░
-    [6] GPT-4.1 nano        (nano)      ~0.10 Wh/query  █░░░░░░░░░
+    [1] Claude Opus 4.6     (heavy)     ~1.00 Wh/query  ████████░░
+    [2] GPT-5.2             (heavy)     ~0.55 Wh/query  ██████░░░░
+    [3] Claude Sonnet 4.6   (standard)  ~0.24 Wh/query  ████░░░░░░
+    [4] GPT-5.2 mini        (standard)  ~0.30 Wh/query  ████░░░░░░
+    [5] Gemini 3.1 Pro      (standard)  ~0.28 Wh/query  ████░░░░░░
+    [6] Claude Haiku 4.5    (light)     ~0.20 Wh/query  ███░░░░░░░
+    [7] Gemini 3.1 Flash    (light)     ~0.18 Wh/query  ██░░░░░░░░
+    [8] GPT-4.1 mini        (light)     ~0.15 Wh/query  ██░░░░░░░░
+    [9] GPT-4.1 nano        (nano)      ~0.10 Wh/query  █░░░░░░░░░
 
   Your choice: 1
 

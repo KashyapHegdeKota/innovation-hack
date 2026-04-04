@@ -78,6 +78,13 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 3
 
+- [ ] **A5b: POST /v1/analyze Endpoint** (`apps/api/routes/analyze.py`) — *Moved from Dev B (B5)*
+  - Server-side endpoint wrapping the analyzer LLM
+  - Input: prompt, selected_model, agent_id (optional)
+  - Calls the analyzer LLM (Haiku 4.5) using GreenLedger's own API key
+  - Returns: AnalyzeResponse with task classification, suggestions, budget status
+  - **Test**: POST to /v1/analyze with a simple prompt, get valid analysis back
+
 - [ ] **A6: Setup Flow** (`cli/commands/setup.py`)
   - `greenledger setup` — interactive first-run: prompt for GreenLedger API key, then each provider key (Anthropic, OpenAI)
   - Sends keys to `POST /v1/keys` on hosted backend
@@ -110,14 +117,14 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 1 (after shared setup)
 
-- [ ] **B1: Model Benchmarks Registry** (`cli/models/registry.py`)
+- [x] **B1: Model Benchmarks Registry** (`cli/models/registry.py`)
   - Complete model registry with accurate data for all supported models
   - Fields per model: model_id, provider, tier, energy_per_query_wh, energy_per_1k_tokens_wh, eco_efficiency_score
   - Source data from GREEN-ROUTER-DEEP-DIVE.md + Jegham et al. + Hugging Face AI Energy Score
   - Include provider carbon intensity constants (avg gCO2e/kWh per provider)
   - **Test**: All 6+ models have complete benchmark data, constants match published sources
 
-- [ ] **B2: AI Provider Wrappers** (`apps/api/services/providers.py`)
+- [x] **B2: AI Provider Wrappers** (`apps/api/services/providers.py`)
   - Anthropic wrapper: call Claude models via `anthropic` SDK using user's decrypted BYOK key
   - OpenAI wrapper: call GPT models via `openai` SDK using user's decrypted BYOK key
   - Unified interface: `execute_inference(model_id, prompt, max_tokens, user_api_key) → InferenceResult`
@@ -125,7 +132,7 @@ Before splitting into individual tracks, the whole team does this together:
   - Support streaming (yield chunks for Dev A's streaming display)
   - **Test**: Send "Hello" to Haiku, get a response back with token counts
 
-- [ ] **B3: Carbon Estimation per Provider** (`cli/utils/carbon.py` — shared with Dev C)
+- [x] **B3: Carbon Estimation per Provider** (`cli/utils/carbon.py` — shared with Dev C)
   - Implement provider-level constants: avg carbon intensity, PUE, WUE (site + source)
   - Function: `estimate_co2e(model, tokens_in, tokens_out) → EstimatedCost`
   - Function: `estimate_water(energy_wh, provider) → float`
@@ -134,14 +141,14 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 2
 
-- [ ] **B4: BYOK Key Storage** (`apps/api/routes/keys.py`, `apps/api/services/keystore.py`)
+- [x] **B4: BYOK Key Storage** (`apps/api/routes/keys.py`, `apps/api/services/keystore.py`)
   - `POST /v1/keys` — accept + encrypt (Fernet/AES-256) user's provider API keys, store in Supabase
   - `GET /v1/keys` — return which providers the user has configured (no raw keys)
   - `DELETE /v1/keys/:provider` — revoke a stored key
   - Encryption key from `ENCRYPTION_KEY` env var
   - **Test**: Store a key, retrieve it decrypted server-side, verify it works against provider
 
-- [ ] **B5: Implement POST /v1/analyze Endpoint** (`apps/api/routes/analyze.py`)
+- [ ] **B5: Implement POST /v1/analyze Endpoint** (`apps/api/routes/analyze.py`) — *Deferred to Dev A (analyzer LLM is Dev A's domain)*
   - New endpoint that wraps the analyzer LLM
   - Input: prompt, selected_model, agent_id (optional)
   - Calls the analyzer LLM (same logic as Dev A's `analyzer.py` but server-side)
@@ -149,7 +156,7 @@ Before splitting into individual tracks, the whole team does this together:
   - Returns: AnalyzeResponse with suggestions + budget status
   - **Test**: POST to /v1/analyze with a simple prompt, get valid analysis back
 
-- [ ] **B6: Wire POST /v1/infer** (`apps/api/routes/infer.py`)
+- [x] **B6: Wire POST /v1/infer** (`apps/api/routes/infer.py`)
   - Implement the full pipeline:
     1. Decrypt user's BYOK key for selected provider
     2. Budget check
@@ -159,7 +166,7 @@ Before splitting into individual tracks, the whole team does this together:
     6. Return InferResponse
   - **Test**: POST to /v1/infer with prompt + model, get response + receipt
 
-- [ ] **B7: Provider Error Handling + Fallback**
+- [x] **B7: Provider Error Handling + Fallback**
   - Handle: rate limits, timeouts, auth errors, model not available
   - If a provider is down, surface a clear error (don't crash the CLI)
   - Return structured errors that Dev A can display nicely
@@ -167,13 +174,13 @@ Before splitting into individual tracks, the whole team does this together:
 
 ### Day 3
 
-- [ ] **B8: Multi-Provider Model Comparison**
+- [x] **B8: Multi-Provider Model Comparison** (`apps/api/routes/models.py`)
   - `/models` command data: for equivalent tiers, show cross-provider comparison
   - Example: "standard" tier → Sonnet (0.24 Wh, Anthropic) vs GPT-4o (0.34 Wh, OpenAI)
   - Rank by eco-efficiency within each tier
   - **Test**: `/models` shows sorted list with energy + eco-score per model
 
-- [ ] **B9: Streaming Support**
+- [x] **B9: Streaming Support** (`apps/api/services/streaming.py`)
   - Implement async generator for streaming responses from Anthropic + OpenAI
   - Yield chunks as they arrive so Dev A can display token-by-token
   - Track token count incrementally during stream
