@@ -12,10 +12,13 @@ from pydantic import BaseModel
 from ..auth import get_current_user
 from ..services.providers import execute_inference, ProviderError
 from ..services.keystore import KeyStore
+from ..store import add_receipt, deduct_wallet
 from cli.models.registry import MODELS, get_model
 from cli.utils.carbon import estimate_query_cost
 import json
-import httpx 
+import uuid
+import httpx
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -91,6 +94,38 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
         water_ml=cost.water_ml,
         levy_usd=cost.levy_usd,
     )
+
+    # Persist to in-memory store
+    receipt_id = str(uuid.uuid4())
+    agent_id = user_id
+    naive_co2e = cost.co2e_g * 4  # naive = heavy model estimate
+    savings_pct = round((1 - cost.co2e_g / naive_co2e) * 100) if naive_co2e > 0 else 0
+
+    add_receipt({
+        "id": receipt_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "agent_id": agent_id,
+        "model": result.model,
+        "provider": result.provider,
+        "tokens_in": result.tokens_in,
+        "tokens_out": result.tokens_out,
+        "latency_ms": result.latency_ms,
+        "environmental_cost": {
+            "co2e_g": cost.co2e_g,
+            "energy_wh": cost.energy_wh,
+            "water_ml": cost.water_ml,
+        },
+        "offset": {
+            "levy_usd": cost.levy_usd,
+            "destination": "stripe_climate_frontier",
+            "status": "confirmed",
+        },
+        "comparison": {
+            "naive_co2e_g": naive_co2e,
+            "savings_pct": savings_pct,
+        },
+    })
+    deduct_wallet(agent_id, cost.co2e_g, receipt_id)
 
     return InferResponseBody(
         text=result.text,

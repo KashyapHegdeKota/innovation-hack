@@ -1,6 +1,7 @@
 # Green Router — Deep Dive: How We Choose, Route, and Score
 
 This document answers three questions:
+
 1. How do we pick the right model for a task?
 2. How do we pick the right region to run it in?
 3. How do we score models by eco-efficiency?
@@ -22,19 +23,20 @@ The Green Router takes in what the agent needs, cross-references it against how 
 ## 1. Choosing the Right Model
 
 ### The Problem
+
 Not all tasks need the most powerful model. A simple summarization doesn't need o3. A complex multi-step reasoning task can't use GPT-4.1 nano. We need to match task complexity to model capability while minimizing environmental cost.
 
 ### Quality Tiers
 
 We classify models into capability tiers based on published benchmarks (MMLU-Pro, HLE, GPQA, MATH-500, LiveCodeBench):
 
-| Tier | Use Case | Example Models | Typical Energy |
-|------|----------|---------------|----------------|
-| **Nano** | Simple extraction, classification, formatting | GPT-4.1 nano, Claude Haiku | 0.1-0.3 Wh/query |
-| **Light** | Summarization, basic Q&A, translation | GPT-4.1 mini, Claude Haiku | 0.2-0.5 Wh/query |
-| **Standard** | General tasks, writing, analysis | Claude Sonnet, GPT-4o | 0.3-1.0 Wh/query |
-| **Heavy** | Complex reasoning, coding, math | Claude Opus, GPT-4.1 | 1.0-5.0 Wh/query |
-| **Reasoning** | Multi-step chain-of-thought, research | o3, DeepSeek-R1 | 5.0-33+ Wh/query |
+| Tier          | Use Case                                      | Example Models             | Typical Energy   |
+| ------------- | --------------------------------------------- | -------------------------- | ---------------- |
+| **Nano**      | Simple extraction, classification, formatting | GPT-4.1 nano, Claude Haiku | 0.1-0.3 Wh/query |
+| **Light**     | Summarization, basic Q&A, translation         | GPT-4.1 mini, Claude Haiku | 0.2-0.5 Wh/query |
+| **Standard**  | General tasks, writing, analysis              | Claude Sonnet, GPT-4o      | 0.3-1.0 Wh/query |
+| **Heavy**     | Complex reasoning, coding, math               | Claude Opus, GPT-4.1       | 1.0-5.0 Wh/query |
+| **Reasoning** | Multi-step chain-of-thought, research         | o3, DeepSeek-R1            | 5.0-33+ Wh/query |
 
 **Energy range is 100x+ between the lightest and heaviest models.** This is the single biggest lever for carbon reduction.
 
@@ -51,12 +53,14 @@ response = gl.infer(
 ```
 
 Mapping:
+
 - `quality="low"` → Nano or Light tier (simple, structured tasks)
 - `quality="medium"` → Standard tier (general-purpose)
 - `quality="high"` → Heavy tier (complex reasoning, creativity)
 - `quality="max"` → Reasoning tier (no compromise on capability)
 
 If the developer doesn't specify quality, we can infer it:
+
 - **Token count heuristic**: Short prompts (<200 tokens) with simple instructions → low
 - **Keyword detection**: "analyze", "reason step by step", "write code" → high
 - **Historical patterns**: If this agent_id typically uses heavy models, default to its pattern
@@ -93,17 +97,17 @@ CREATE TABLE model_benchmarks (
 
 ### Seed Data (from published research)
 
-| Model | Provider | Tier | Wh/query (avg) | Eco-efficiency | Source |
-|-------|----------|------|-----------------|----------------|--------|
-| GPT-4.1 nano | OpenAI | nano | ~0.15 | — | Muxup analysis |
-| Claude Haiku 4.5 | Anthropic | light | ~0.20 | — | Provider estimate |
-| GPT-4o | OpenAI | standard | ~0.34 | 0.789 | Altman disclosure, Jegham |
-| Claude Sonnet 4.6 | Anthropic | standard | ~0.24 | 0.825 | Google methodology, Jegham |
-| GPT-4.1 | OpenAI | heavy | ~0.50 | — | Muxup analysis |
-| Claude Opus 4.6 | Anthropic | heavy | ~1.0 | — | Estimated from tier |
-| o3-mini | OpenAI | reasoning | ~3.0 | 0.884 | Jegham |
-| o3 | OpenAI | reasoning | ~33.0 | 0.758 | Jegham |
-| DeepSeek-R1 | DeepSeek | reasoning | ~16.0 | 0.067-0.539 | Muxup, Jegham (varies by infra) |
+| Model             | Provider  | Tier      | Wh/query (avg) | Eco-efficiency | Source                          |
+| ----------------- | --------- | --------- | -------------- | -------------- | ------------------------------- |
+| GPT-4.1 nano      | OpenAI    | nano      | ~0.15          | —              | Muxup analysis                  |
+| Claude Haiku 4.5  | Anthropic | light     | ~0.20          | —              | Provider estimate               |
+| GPT-4o            | OpenAI    | standard  | ~0.34          | 0.789          | Altman disclosure, Jegham       |
+| Claude Sonnet 4.6 | Anthropic | standard  | ~0.24          | 0.825          | Google methodology, Jegham      |
+| GPT-4.1           | OpenAI    | heavy     | ~0.50          | —              | Muxup analysis                  |
+| Claude Opus 4.6   | Anthropic | heavy     | ~1.0           | —              | Estimated from tier             |
+| o3-mini           | OpenAI    | reasoning | ~3.0           | 0.884          | Jegham                          |
+| o3                | OpenAI    | reasoning | ~33.0          | 0.758          | Jegham                          |
+| DeepSeek-R1       | DeepSeek  | reasoning | ~16.0          | 0.067-0.539    | Muxup, Jegham (varies by infra) |
 
 **Key insight from Jegham:** DeepSeek-R1 running on its own infrastructure scores 0.067 eco-efficiency, but running on Azure scores 0.539. **Infrastructure matters as much as the model itself.** This is exactly why Green Router needs to control the routing.
 
@@ -112,6 +116,7 @@ CREATE TABLE model_benchmarks (
 ## 2. Choosing the Right Region
 
 ### The Problem
+
 The same model, running the same query, can produce 5-10x different carbon emissions depending on where it runs. A region powered by hydro/nuclear is dramatically cleaner than one powered by coal/gas.
 
 ### Data Source: Electricity Maps API
@@ -119,6 +124,7 @@ The same model, running the same query, can produce 5-10x different carbon emiss
 Electricity Maps provides real-time carbon intensity for 200+ electricity zones worldwide.
 
 **API call:**
+
 ```
 GET https://api.electricitymap.org/v3/carbon-intensity/latest?zone=US-CAL-CISO
 Headers: auth-token: {ELECTRICITY_MAPS_API_KEY}
@@ -150,14 +156,14 @@ CREATE TABLE region_zone_mapping (
 
 **Key mappings:**
 
-| Cloud Region | Electricity Zone | Typical gCO2e/kWh | Why |
-|-------------|-----------------|-------------------|-----|
-| us-west-2 (Oregon) | US-NW-PACW | 50-120 | Heavy hydro |
-| eu-north-1 (Stockholm) | SE-SE3 | 10-40 | Almost all hydro/nuclear/wind |
-| eu-west-1 (Ireland) | IE | 200-350 | Gas + wind (variable) |
-| us-east-1 (Virginia) | US-MIDA-PJM | 300-450 | Gas/coal heavy |
-| ap-northeast-1 (Tokyo) | JP-TK | 400-500 | Gas/coal heavy |
-| ca-central-1 (Montreal) | CA-QC | 5-20 | Almost 100% hydro |
+| Cloud Region            | Electricity Zone | Typical gCO2e/kWh | Why                           |
+| ----------------------- | ---------------- | ----------------- | ----------------------------- |
+| us-west-2 (Oregon)      | US-NW-PACW       | 50-120            | Heavy hydro                   |
+| eu-north-1 (Stockholm)  | SE-SE3           | 10-40             | Almost all hydro/nuclear/wind |
+| eu-west-1 (Ireland)     | IE               | 200-350           | Gas + wind (variable)         |
+| us-east-1 (Virginia)    | US-MIDA-PJM      | 300-450           | Gas/coal heavy                |
+| ap-northeast-1 (Tokyo)  | JP-TK            | 400-500           | Gas/coal heavy                |
+| ca-central-1 (Montreal) | CA-QC            | 5-20              | Almost 100% hydro             |
 
 **ca-central-1 (Montreal/Quebec) and eu-north-1 (Stockholm) are consistently the greenest major cloud regions.**
 
@@ -182,6 +188,7 @@ CREATE INDEX idx_grid_latest ON grid_carbon_intensity(electricity_zone, measured
 ```
 
 **Redis cache layer:**
+
 ```
 Key:   grid:{zone}:latest
 Value: {"carbon_intensity": 89, "renewable_pct": 78, "measured_at": "..."}
@@ -201,9 +208,11 @@ When Electricity Maps data isn't available for a zone, fall back to:
 ### Forecasting (future enhancement)
 
 Electricity Maps also provides **72-hour forecasts**:
+
 ```
 GET /v3/carbon-intensity/forecast?zone=US-CAL-CISO
 ```
+
 This enables deferred task scheduling: "Run this batch job when California grid is forecast to be cleanest in the next 24 hours."
 
 ---
@@ -234,6 +243,7 @@ Carbon (kgCO2e):
 ```
 
 Where:
+
 - `L_i` = latency to first token (seconds)
 - `R_i` = tokens per second throughput
 - `P_GPU` = GPU power draw (kW), e.g., H100 = 0.7 kW
@@ -246,6 +256,7 @@ Where:
 #### Step 2: Calculate Performance Score
 
 Composite AI performance index, weighted:
+
 - **Reasoning/Knowledge** (50%): MMLU-Pro, HLE, GPQA Diamond
 - **Mathematics** (25%): MATH-500, AIME 2024
 - **Coding** (25%): SciCode, LiveCodeBench
@@ -261,6 +272,7 @@ Each composite is a normalized (0-1) average of its constituent benchmarks.
 Data Envelopment Analysis finds the efficiency frontier — models that deliver the best performance for the least environmental cost.
 
 For each model, DEA solves:
+
 ```
 Maximize: (weighted performance output) / (weighted environmental inputs)
 Subject to: no model's efficiency exceeds 1.0
@@ -311,14 +323,14 @@ def calculate_realtime_eco_score(model, region):
 
 From Jegham et al. Table 1 and cloud provider disclosures:
 
-| Provider | Typical PUE | WUE Site (L/kWh) | WUE Source (L/kWh) | Notes |
-|----------|-------------|-------------------|---------------------|-------|
-| AWS | 1.14 | 0.18 | 5.11 | US average; varies by region |
-| Google Cloud | 1.10 | 0.26 | 3.91 | Best-in-class PUE |
-| Microsoft Azure | 1.12 | 0.30 | 4.35 | |
-| DeepSeek (China) | 1.27 | 1.20 | 6.016 | Higher due to grid mix |
-| Anthropic (via AWS) | 1.14 | 0.18 | 5.11 | Hosted on AWS |
-| OpenAI (via Azure) | 1.12 | 0.30 | 4.35 | Hosted on Azure |
+| Provider            | Typical PUE | WUE Site (L/kWh) | WUE Source (L/kWh) | Notes                        |
+| ------------------- | ----------- | ---------------- | ------------------ | ---------------------------- |
+| AWS                 | 1.14        | 0.18             | 5.11               | US average; varies by region |
+| Google Cloud        | 1.10        | 0.26             | 3.91               | Best-in-class PUE            |
+| Microsoft Azure     | 1.12        | 0.30             | 4.35               |                              |
+| DeepSeek (China)    | 1.27        | 1.20             | 6.016              | Higher due to grid mix       |
+| Anthropic (via AWS) | 1.14        | 0.18             | 5.11               | Hosted on AWS                |
+| OpenAI (via Azure)  | 1.12        | 0.30             | 4.35               | Hosted on Azure              |
 
 CIF (Carbon Intensity Factor) is NOT static — it comes from Electricity Maps in real-time. This is what makes our routing dynamic rather than relying on annual averages.
 
@@ -423,6 +435,7 @@ def route(request: InferRequest) -> RoutingDecision:
 **Step 1:** Tier = ["nano", "light"]
 
 **Step 2:** Candidates:
+
 - GPT-4.1 nano (0.15 Wh/query)
 - Claude Haiku 4.5 (0.20 Wh/query)
 
@@ -430,16 +443,16 @@ def route(request: InferRequest) -> RoutingDecision:
 
 **Step 4:** Evaluate all model+region combos:
 
-| Model | Region | Grid gCO2e/kWh | CO2e per query | Eco-score |
-|-------|--------|----------------|----------------|-----------|
-| GPT-4.1 nano | ca-central-1 (Quebec) | 15 | 0.002g | 0.91 |
-| Claude Haiku | ca-central-1 | 15 | 0.003g | 0.89 |
-| GPT-4.1 nano | eu-north-1 (Stockholm) | 25 | 0.004g | 0.88 |
-| Claude Haiku | eu-north-1 | 25 | 0.005g | 0.86 |
-| GPT-4.1 nano | us-west-2 (Oregon) | 90 | 0.014g | 0.72 |
-| Claude Haiku | us-west-2 | 90 | 0.018g | 0.68 |
-| GPT-4.1 nano | us-east-1 (Virginia) | 380 | 0.057g | 0.41 |
-| Claude Haiku | us-east-1 | 380 | 0.076g | 0.35 |
+| Model        | Region                 | Grid gCO2e/kWh | CO2e per query | Eco-score |
+| ------------ | ---------------------- | -------------- | -------------- | --------- |
+| GPT-4.1 nano | ca-central-1 (Quebec)  | 15             | 0.002g         | 0.91      |
+| Claude Haiku | ca-central-1           | 15             | 0.003g         | 0.89      |
+| GPT-4.1 nano | eu-north-1 (Stockholm) | 25             | 0.004g         | 0.88      |
+| Claude Haiku | eu-north-1             | 25             | 0.005g         | 0.86      |
+| GPT-4.1 nano | us-west-2 (Oregon)     | 90             | 0.014g         | 0.72      |
+| Claude Haiku | us-west-2              | 90             | 0.018g         | 0.68      |
+| GPT-4.1 nano | us-east-1 (Virginia)   | 380            | 0.057g         | 0.41      |
+| Claude Haiku | us-east-1              | 380            | 0.076g         | 0.35      |
 
 **Step 5:** With carbon_priority="low", sort by 70% carbon + 30% cost.
 
@@ -453,21 +466,22 @@ def route(request: InferRequest) -> RoutingDecision:
 
 ## Keeping the Data Fresh
 
-| Data | Source | Refresh Rate | Method |
-|------|--------|-------------|--------|
-| Grid carbon intensity | Electricity Maps API | Every 5 min | Background polling job → Redis + Postgres |
-| Grid forecast (72h) | Electricity Maps API | Every 30 min | Background polling job → Postgres |
-| Model energy benchmarks | Hugging Face AI Energy Score, Jegham, provider disclosures | Weekly | Manual review + automated scrape where possible |
-| Model performance benchmarks | LMSYS Arena, public evals | Weekly | Manual review |
-| Eco-efficiency scores (DEA) | Our computation | Weekly | Batch job using latest energy + performance data |
-| Infrastructure multipliers (PUE, WUE) | Provider sustainability reports | Quarterly | Manual update |
-| Region-zone mapping | Cloud provider docs | On new region launch | Manual update |
+| Data                                  | Source                                                     | Refresh Rate         | Method                                           |
+| ------------------------------------- | ---------------------------------------------------------- | -------------------- | ------------------------------------------------ |
+| Grid carbon intensity                 | Electricity Maps API                                       | Every 5 min          | Background polling job → Redis + Postgres        |
+| Grid forecast (72h)                   | Electricity Maps API                                       | Every 30 min         | Background polling job → Postgres                |
+| Model energy benchmarks               | Hugging Face AI Energy Score, Jegham, provider disclosures | Weekly               | Manual review + automated scrape where possible  |
+| Model performance benchmarks          | LMSYS Arena, public evals                                  | Weekly               | Manual review                                    |
+| Eco-efficiency scores (DEA)           | Our computation                                            | Weekly               | Batch job using latest energy + performance data |
+| Infrastructure multipliers (PUE, WUE) | Provider sustainability reports                            | Quarterly            | Manual update                                    |
+| Region-zone mapping                   | Cloud provider docs                                        | On new region launch | Manual update                                    |
 
 ---
 
 ## What We Can Build Today vs. What Needs Estimation
 
 ### Available right now (real APIs, real data):
+
 - Electricity Maps: real-time grid carbon intensity for 200+ zones ✅
 - Hugging Face AI Energy Score: Wh per 1000 queries for 166+ models on H100 ✅
 - Jegham eco-efficiency scores: DEA scores for 30 commercial models ✅
@@ -477,9 +491,11 @@ def route(request: InferRequest) -> RoutingDecision:
 - Cloud Carbon Footprint: open-source methodology ✅
 
 ### Needs estimation/inference:
+
 - Exact energy for closed-source API models (OpenAI, Anthropic don't publish per-query Wh) — we use published research + provider disclosures to approximate
 - Latency per region (varies with load) — we measure empirically by pinging endpoints
 - Exact GPU utilization for API-served models — we use Jegham's probabilistic model with conservative assumptions
 
 ### Our edge over time:
+
 Every request through GreenLedger gives us actual observed latency, token counts, and routing outcomes. Over time, our model energy estimates become the most accurate in the market because we have real production telemetry — not just benchmark data.

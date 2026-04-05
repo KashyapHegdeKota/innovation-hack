@@ -1,6 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any
+from dotenv import load_dotenv
+import os
+
+# Load .env from the api directory so Supabase creds are available
+_env_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(_env_path)
+
 from .auth import get_current_user
 from .database import get_supabase_client
 

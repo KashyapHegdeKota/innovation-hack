@@ -36,8 +36,9 @@ console = Console()
 # ── Config ──────────────────────────────────────────────────────────────────────
 
 API_URL           = "https://api.anthropic.com/v1/messages"
-ROUTER_URL = os.environ.get("ROUTER_URL", "https://api.kashyaphegde.com/greenledger/v1/analyze")
-INFER_URL  = os.environ.get("INFER_URL",  "https://api.kashyaphegde.com/greenledger/v1/infer")
+ROUTER_URL   = os.environ.get("ROUTER_URL",   "https://api.kashyaphegde.com/greenledger/v1/analyze")
+INFER_URL    = os.environ.get("INFER_URL",    "https://api.kashyaphegde.com/greenledger/v1/infer")
+RECEIPTS_URL = os.environ.get("RECEIPTS_URL", "https://api.kashyaphegde.com/greenledger/v1/receipts")
 
 # ── Model registry ───────────────────────────────────────────────────────────────
 
@@ -183,6 +184,43 @@ async def call_infer(prompt: str, model_id: str, max_tokens: int = 1024) -> Opti
     except Exception as e:
         console.print(f"[dim yellow]/v1/infer: {e} — falling back[/]")
         return None
+
+
+async def push_receipt(
+    receipt: dict,
+    model_id: str,
+    tokens_in: int,
+    tokens_out: int,
+    latency_ms: int,
+    requested_model: str | None = None,
+    prompt_preview: str | None = None,
+) -> None:
+    """Push a locally-computed receipt to the backend for persistence in Supabase."""
+    mi = MODEL_INDEX.get(model_id)
+    provider = mi.provider if mi else "anthropic"
+    naive_co2e = receipt.get("co2e_g", 0) * 4
+    savings_pct = round((1 - receipt.get("co2e_g", 0) / naive_co2e) * 100) if naive_co2e > 0 else 0
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            await client.post(RECEIPTS_URL, json={
+                "agent_id": "cli-user",
+                "model": model_id,
+                "provider": provider,
+                "tokens_in": tokens_in if isinstance(tokens_in, int) else 0,
+                "tokens_out": tokens_out if isinstance(tokens_out, int) else 0,
+                "latency_ms": latency_ms,
+                "co2e_g": receipt.get("co2e_g", 0),
+                "energy_wh": receipt.get("energy_wh", 0),
+                "water_ml": receipt.get("water_ml", 0),
+                "levy_usd": receipt.get("levy_usd", 0),
+                "naive_co2e_g": naive_co2e,
+                "savings_pct": savings_pct,
+                "requested_model": requested_model or model_id,
+                "prompt_preview": prompt_preview,
+            })
+    except Exception:
+        pass  # Silent — backend unavailable is fine for offline use
+
 
 # ── Direct Anthropic streaming ───────────────────────────────────────────────────
 
@@ -871,6 +909,12 @@ async def main():
                     "levy_usd":  ewh * 0.00012,
                 }
                 messages.append({"role": "assistant", "content": "[response streamed above]"})
+                # Push receipt to backend for Supabase persistence
+                asyncio.create_task(push_receipt(
+                    receipt, final_model, tok_in, tok_out, latency_ms,
+                    requested_model=model_id,
+                    prompt_preview=user_input[:80],
+                ))
 
             # ── Phase 4b — Environmental receipt ───────────────────────────
             # Pass the tokens into the render function!
