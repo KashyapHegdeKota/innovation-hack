@@ -27,7 +27,7 @@ app = FastAPI(
 
 # Configure CORS — reads from env so production domains work without code changes
 _raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000")
-_allowed_origins = [o.strip() for o in _raw_origins.split(",")]
+_allowed_origins = [o.strip().rstrip("/") for o in _raw_origins.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
