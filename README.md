@@ -35,13 +35,21 @@ pip install -r requirements.txt
 python main.py
 ```
 
-#### Frontend (`apps/web`)
-Create `apps/web/.env` based on `apps/web/.env.example`.
+#### Frontend Dashboard (`apps/web`)
 ```bash
 cd apps/web
 npm install
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to view the dashboard. No API keys required — the dashboard ships with mock data and Firebase auth is bypassed for development.
+
+**Dashboard Pages:**
+- **Overview** — Sustainability score gauge, CO2e/energy/water stats, emissions chart, model usage breakdown, recommendations
+- **Green Router** — Every routing decision visualized: why a model was picked, alternatives considered, savings achieved
+- **Agents** — Sustainability leaderboard across all AI agents with score, wallet usage, and trend
+- **Carbon Wallets** — Per-agent carbon budgets with burn charts, utilization gauges, and exceeded policy configuration
+- **Carbon Levy** — Micro-levy tracking to Stripe Climate: confirmed vs pooled vs pending, carbon removal over time
+- **Receipts** — Searchable receipt explorer with expandable detail rows and CSV/JSON export
 
 ---
 
@@ -56,7 +64,7 @@ npm run dev
 ---
 
 ## 🛠️ Tech Stack
-- **Frontend:** Next.js 14, TypeScript, Tailwind CSS
+- **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Recharts
 - **Backend:** FastAPI, Pydantic, Supabase
 - **CLI:** Rich, Prompt Toolkit, Click
 - **AI Integration:** Anthropic, OpenAI, Google GenAI SDKs

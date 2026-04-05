@@ -6,8 +6,8 @@ import { AuthProvider } from "../context/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Hackathon Template",
-  description: "Boostrapped with Next.js, FastAPI, Supabase, and Firebase Auth",
+  title: "GreenLedger — Carbon-Aware AI Dashboard",
+  description: "Environmental accountability for AI inference",
 };
 
 export default function RootLayout({
