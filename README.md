@@ -1,20 +1,33 @@
-<div align="center">
+# GreenLedger
+
+**Carbon-aware AI infrastructure for the agentic economy.**
+
+GreenLedger sits between you and AI model providers, ensuring every inference is environmentally accountable. It automatically detects overkill model usage, suggests greener alternatives, and tracks CO2e, energy, and water consumption per query — with full environmental receipts.
+
+---
+
+## How It Works
 
 ```
-  ██████╗ ██████╗ ███████╗███████╗███╗   ██╗██╗     ███████╗██████╗  ██████╗ ███████╗██████╗
- ██╔════╝ ██╔══██╗██╔════╝██╔════╝████╗  ██║██║     ██╔════╝██╔══██╗██╔════╝ ██╔════╝██╔══██╗
- ██║  ███╗██████╔╝█████╗  █████╗  ██╔██╗ ██║██║     █████╗  ██║  ██║██║  ███╗█████╗  ██████╔╝
- ██║   ██║██╔══██╗██╔══╝  ██╔══╝  ██║╚██╗██║██║     ██╔══╝  ██║  ██║██║   ██║██╔══╝  ██╔══██╗
- ╚██████╔╝██║  ██║███████╗███████╗██║ ╚████║███████╗███████╗██████╔╝╚██████╔╝███████╗██║  ██║
-  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝╚══════╝╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝
+You type a prompt
+       |
+       v
+  [Green Router]  -- classifies task complexity
+       |
+       v
+  "Overkill Detected!" -- suggests lighter model if appropriate
+       |
+       v
+  [Inference] -- routes to selected provider (Anthropic / OpenAI / Google)
+       |
+       v
+  [Environmental Receipt] -- CO2e, energy, water, carbon levy per query
+       |
+       v
+  [Dashboard] -- real-time sustainability tracking across all sessions
 ```
 
-**Carbon accountability for the agentic AI economy.**
-
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-greenledgere.vercel.app-22c55e?style=for-the-badge&logo=vercel&logoColor=white)](https://greenledgere.vercel.app)
-[![API](https://img.shields.io/badge/API-innovation--hack.onrender.com-3b82f6?style=for-the-badge&logo=fastapi&logoColor=white)](https://innovation-hack.onrender.com)
-[![License](https://img.shields.io/badge/License-MIT-a855f7?style=for-the-badge)](LICENSE)
-[![Built at](https://img.shields.io/badge/Built%20at-Innovation%20Hacks%202.0-f59e0b?style=for-the-badge)](https://devpost.com)
+---
 
 </div>
 
