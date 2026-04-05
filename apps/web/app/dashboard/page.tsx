@@ -90,15 +90,16 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Dashboard</h1>
+          <h1 className="text-3xl font-bold gradient-text">Overview</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
             {s.period_start && s.period_end ? `${s.period_start} — ${s.period_end} · ` : ""}
             {s.active_agents} active agent{s.active_agents !== 1 ? "s" : ""}
           </p>
         </div>
-        <span className="text-xs px-2.5 py-1 rounded-full font-medium"
-          style={{ backgroundColor: live ? "rgba(34,197,94,0.1)" : "rgba(90,117,101,0.15)", color: live ? "var(--green-accent)" : "var(--text-muted)" }}>
-          {loading ? "○ Loading..." : live ? "● Live" : "○ No data"}
+        <span className="text-xs px-3 py-1.5 rounded-full font-semibold flex items-center gap-1.5"
+          style={{ backgroundColor: live ? "rgba(34,197,94,0.1)" : "rgba(90,117,101,0.15)", color: live ? "var(--green-accent)" : "var(--text-muted)", border: `1px solid ${live ? "rgba(34,197,94,0.2)" : "rgba(90,117,101,0.2)"}` }}>
+          <span className={live ? "pulse-live" : ""}>{loading ? "○" : live ? "●" : "○"}</span>
+          {loading ? "Loading..." : live ? "Live" : "No data"}
         </span>
       </div>
 
@@ -116,30 +117,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Green Routing Impact banner — computed from real receipts */}
+      {/* Green Routing Impact banner */}
       {routingStats.routed > 0 && (
-        <div className="rounded-xl border p-5"
-          style={{ backgroundColor: "rgba(34,197,94,0.06)", borderColor: "rgba(34,197,94,0.2)" }}>
+        <div className="relative rounded-xl border overflow-hidden p-5"
+          style={{ backgroundColor: "rgba(34,197,94,0.04)", borderColor: "rgba(34,197,94,0.2)", boxShadow: "0 0 40px rgba(34,197,94,0.05) inset" }}>
+          <div className="absolute top-0 left-0 right-0 h-px"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.5), transparent)" }} />
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold" style={{ color: "var(--green-accent)" }}>Green Routing Impact</h3>
+              <h3 className="text-sm font-bold" style={{ color: "var(--green-accent)" }}>⚡ Green Routing Impact</h3>
               <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                {routingStats.downgraded} of {routingStats.routed} queries downgraded ({downgradePct}%) · 20% of savings funds carbon removal
+                {routingStats.downgraded} of {routingStats.routed} queries rerouted to greener models · 20% of savings funds carbon removal
               </p>
             </div>
-            <div className="flex gap-6">
-              <div className="text-right">
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Queries Rerouted</p>
-                <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>{routingStats.downgraded}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>CO2e Avoided</p>
-                <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>{routingStats.co2eAvoided.toFixed(3)}g</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Downgrade Rate</p>
-                <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>{downgradePct}%</p>
-              </div>
+            <div className="flex gap-8">
+              {[
+                { label: "Queries Rerouted", value: String(routingStats.downgraded) },
+                { label: "CO2e Avoided",     value: `${routingStats.co2eAvoided.toFixed(3)}g` },
+                { label: "Downgrade Rate",   value: `${downgradePct}%` },
+              ].map((stat) => (
+                <div key={stat.label} className="text-right">
+                  <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                  <p className="text-xl font-bold font-mono gradient-text">{stat.value}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

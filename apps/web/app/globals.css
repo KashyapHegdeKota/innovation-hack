@@ -3,17 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0a0f0d;
-  --bg-secondary: #111916;
-  --bg-card: #151d19;
-  --bg-card-hover: #1a2420;
-  --border: #1e2e26;
-  --border-bright: #2a3f33;
+  --bg-primary: #080d0b;
+  --bg-secondary: #0d1410;
+  --bg-card: #111916;
+  --bg-card-hover: #161f1b;
+  --border: #1a2b22;
+  --border-bright: #243d2e;
   --text-primary: #e8efe9;
   --text-secondary: #8fa898;
-  --text-muted: #5a7565;
+  --text-muted: #4d6b59;
   --green-accent: #22c55e;
   --green-dim: #166534;
+  --green-glow: rgba(34, 197, 94, 0.15);
   --red-accent: #ef4444;
   --amber-accent: #f59e0b;
   --blue-accent: #3b82f6;
@@ -23,10 +24,79 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: "Inter", sans-serif;
+  /* Subtle dot grid */
+  background-image: radial-gradient(circle, #1a2b22 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
+/* Glass card */
+.glass {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(17, 25, 22, 0.85);
+  border: 1px solid var(--border);
+}
+
+/* Glow on hover */
+.glow-hover {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glow-hover:hover {
+  border-color: rgba(34, 197, 94, 0.35) !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.08), inset 0 0 20px rgba(34, 197, 94, 0.03);
+}
+
+/* Green glow for accent elements */
+.green-glow {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #86efac 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle top accent line on cards */
+.card-accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.4), transparent);
+}
+
+/* Stat number glow */
+.stat-value {
+  text-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+/* Sidebar active glow */
+.nav-active {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.04));
+  border-left: 2px solid var(--green-accent);
+  box-shadow: inset 0 0 20px rgba(34, 197, 94, 0.05);
+}
+
+/* Pulse animation for live indicator */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse-live {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
 }

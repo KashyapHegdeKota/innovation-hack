@@ -1,13 +1,8 @@
 "use client";
 
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
 interface DataPoint {
@@ -21,64 +16,71 @@ interface EmissionsChartProps {
   title?: string;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border px-4 py-3 text-xs space-y-1.5"
+      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border-bright)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
+      <p className="font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{label}</p>
+      {payload.map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+          <span style={{ color: "var(--text-muted)" }}>{p.name}:</span>
+          <span className="font-mono font-medium" style={{ color: "var(--text-primary)" }}>{p.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export default function EmissionsChart({ data, title = "Emissions Over Time" }: EmissionsChartProps) {
   return (
-    <div
-      className="rounded-xl border p-5"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
-    >
-      <h3 className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: "var(--text-muted)" }}>
-        {title}
-      </h3>
+    <div className="relative rounded-xl border glow-hover overflow-hidden p-5"
+      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+
+      <div className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent)" }} />
+
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          {title}
+        </h3>
+        <div className="flex items-center gap-4">
+          {[{ color: "#22c55e", label: "CO2e (g)" }, { color: "#3b82f6", label: "Energy (Wh)" }].map(l => (
+            <div key={l.label} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{l.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={data}>
+        <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="co2Gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3} />
+              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.25} />
               <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
               <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
             </linearGradient>
+            <filter id="lineGlow">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis
-            dataKey="date"
-            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
-            axisLine={{ stroke: "var(--border)" }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: "var(--text-muted)", fontSize: 11 }}
-            axisLine={{ stroke: "var(--border)" }}
-            tickLine={false}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--bg-card)",
-              border: "1px solid var(--border-bright)",
-              borderRadius: "8px",
-              color: "var(--text-primary)",
-              fontSize: "12px",
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="co2e"
-            stroke="#22c55e"
-            strokeWidth={2}
-            fill="url(#co2Gradient)"
-            name="CO2e (g)"
-          />
-          <Area
-            type="monotone"
-            dataKey="energy"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            fill="url(#energyGradient)"
-            name="Energy (Wh)"
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+            axisLine={false} tickLine={false} dy={8} />
+          <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+            axisLine={false} tickLine={false} width={36} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border-bright)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+          <Area type="monotone" dataKey="co2e" stroke="#22c55e" strokeWidth={2}
+            fill="url(#co2Gradient)" name="CO2e (g)" dot={false} activeDot={{ r: 4, fill: "#22c55e", strokeWidth: 0 }} />
+          <Area type="monotone" dataKey="energy" stroke="#3b82f6" strokeWidth={2}
+            fill="url(#energyGradient)" name="Energy (Wh)" dot={false} activeDot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
