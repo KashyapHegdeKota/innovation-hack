@@ -111,17 +111,31 @@ def run_setup():
     console.print("[bold]Configure Bring-Your-Own-Key (BYOK) Models[/bold]")
     console.print("[dim]Press Enter to skip any key you don't have right now.[/dim]")
     
-    anthropic = Prompt.ask("Anthropic API Key", password=True, default="")
-    openai    = Prompt.ask("OpenAI API Key", password=True, default="")
-    gemini    = Prompt.ask("Gemini API Key", password=True, default="")
+    providers = [
+        ("ANTHROPIC_API_KEY", "Anthropic API Key", "anthropic"),
+        ("OPENAI_API_KEY", "OpenAI API Key", "openai"),
+        ("GEMINI_API_KEY", "Gemini API Key", "gemini"),
+    ]
+
+    validated_keys = {}
+    for env_key, label, provider_id in providers:
+        key = Prompt.ask(label, password=True, default="").strip()
+        if not key:
+            continue
+        with console.status(f"  Validating {label}..."):
+            valid, message = validate_key(provider_id, key)
+        if valid:
+            validated_keys[env_key] = key
+            console.print(f"  [green]✓[/] {label}: {message}")
+        else:
+            console.print(f"  [red]✗[/] {label}: {message}")
+            console.print(f"  [dim]Key not saved. Re-run setup to try again.[/]")
 
     # --- 3. Save to config.json ---
     config_data = {
         "user_email": email,
         "auth_token": access_token,
-        "ANTHROPIC_API_KEY": anthropic.strip(),
-        "OPENAI_API_KEY": openai.strip(),
-        "GEMINI_API_KEY": gemini.strip()
+        **validated_keys,
     }
 
     with open(CONFIG_FILE, "w") as f:
