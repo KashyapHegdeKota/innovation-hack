@@ -23,7 +23,7 @@ export default function ModelPieChart({ data }: { data: ModelUsage[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="relative rounded-xl border glow-hover overflow-hidden p-5"
+    <div className="relative rounded-xl border glow-hover overflow-hidden p-5 flex-1 flex flex-col"
       style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
 
       <div className="absolute top-0 left-0 right-0 h-px"
