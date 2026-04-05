@@ -160,20 +160,19 @@ function CarbonChart() {
   const toX = (year: number) => PAD.left + ((year - MIN_X) / (MAX_X - MIN_X)) * cW;
   const toY = (val: number)  => PAD.top  + ((MAX_Y - val)  / (MAX_Y - MIN_Y)) * cH;
 
-  // Build SVG path from data column (skip NaN)
-  const makePath = (colIdx: number) => {
-    const pts = RAW.filter(r => !isNaN(r[colIdx]));
-    if (pts.length === 0) return "";
-    return pts.map((r, i) => `${i === 0 ? "M" : "L"}${toX(r[0]).toFixed(1)},${toY(r[colIdx]).toFixed(1)}`).join(" ");
-  };
+  // Build polyline points string from data column (skip NaN)
+  const makePoints = (colIdx: number) =>
+    RAW.filter(r => !isNaN(r[colIdx]))
+       .map(r => `${toX(r[0]).toFixed(1)},${toY(r[colIdx]).toFixed(1)}`)
+       .join(" ");
 
-  // Removal area polygon (fill between removal line and y=0)
+  // Removal area polygon points (fill between removal line and y=0)
   const makeRemovalArea = (colIdx: number) => {
     const pts = RAW.filter(r => !isNaN(r[colIdx]));
     if (pts.length === 0) return "";
-    const top = pts.map(r => `${toX(r[0]).toFixed(1)},${toY(0).toFixed(1)}`).join(" ");
-    const bottom = pts.map(r => `${toX(r[0]).toFixed(1)},${toY(r[colIdx]).toFixed(1)}`).reverse().join(" ");
-    return `M ${top} L ${bottom} Z`;
+    const top    = pts.map(r => `${toX(r[0]).toFixed(1)},${toY(0).toFixed(1)}`).join(" ");
+    const bottom = [...pts].reverse().map(r => `${toX(r[0]).toFixed(1)},${toY(r[colIdx]).toFixed(1)}`).join(" ");
+    return `${top} ${bottom}`;
   };
 
   // Hover tooltip
@@ -272,19 +271,18 @@ function CarbonChart() {
 
         {/* Carbon removal area */}
         {cfg.removalIdx !== null && (
-          <path d={makeRemovalArea(cfg.removalIdx)} fill="rgba(99,102,241,0.15)" />
+          <polygon points={makeRemovalArea(cfg.removalIdx)} fill="rgba(99,102,241,0.15)" stroke="none" />
         )}
 
         {/* Historical line */}
-        <path d={makePath(1)} fill="none" stroke="#d1d5db" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={makePoints(1)} fill="none" stroke="#ffffff" strokeWidth={3} />
 
         {/* Scenario path */}
-        <path d={makePath(cfg.pathIdx)} fill="none" stroke={cfg.color} strokeWidth="2.5"
-          strokeDasharray="8 5" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={makePoints(cfg.pathIdx)} fill="none" stroke={cfg.color} strokeWidth={2.5} strokeDasharray="8 5" />
 
         {/* Removal line */}
         {cfg.removalIdx !== null && (
-          <path d={makePath(cfg.removalIdx)} fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points={makePoints(cfg.removalIdx)} fill="none" stroke="#818cf8" strokeWidth={2} />
         )}
 
         {/* 2020 dot */}
