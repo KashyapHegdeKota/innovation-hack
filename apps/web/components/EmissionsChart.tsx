@@ -2,7 +2,7 @@
 
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, BarChart, Bar, Cell,
+  Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Line,
 } from "recharts";
 
 interface DataPoint {
@@ -59,15 +59,16 @@ export default function EmissionsChart({ data, title = "Emissions Over Time" }: 
 
       <ResponsiveContainer width="100%" height={260}>
         {singleDay ? (
-          // Single day — use grouped bars instead of area (dots look bad)
-          <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barGap={4}>
+          // Single day — dual Y axes so CO2e and Energy scale independently
+          <ComposedChart data={data} margin={{ top: 4, right: 40, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} dy={8} />
-            <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
+            <YAxis yAxisId="co2e" tick={{ fill: "#22c55e", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
+            <YAxis yAxisId="energy" orientation="right" tick={{ fill: "#3b82f6", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(34,197,94,0.05)" }} />
-            <Bar dataKey="co2e" name="CO2e (g)" fill="#22c55e" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
-            <Bar dataKey="energy" name="Energy (Wh)" fill="#3b82f6" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
-          </BarChart>
+            <Bar yAxisId="co2e" dataKey="co2e" name="CO2e (g)" fill="#22c55e" radius={[4, 4, 0, 0]} fillOpacity={0.85} barSize={60} />
+            <Bar yAxisId="energy" dataKey="energy" name="Energy (Wh)" fill="#3b82f6" radius={[4, 4, 0, 0]} fillOpacity={0.85} barSize={60} />
+          </ComposedChart>
         ) : (
           <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
