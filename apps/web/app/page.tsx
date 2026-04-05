@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import { ArrowRight, ArrowUpRight, Leaf, Check, X } from "lucide-react";
 
 /* ── Live CO₂ counter ──────────────────────────────────────────── */
@@ -230,7 +230,7 @@ function Code({ code, label, accent }: { code: string; label: string; accent?: b
 
 /* ── Main page ─────────────────────────────────────────────────── */
 export default function LandingPage() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const co2 = useLiveCounter();
 
   return (
