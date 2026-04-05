@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Cloud, Zap, Droplets, DollarSign, TrendingDown, Bot } from "lucide-react";
+import { Cloud, Zap, Droplets, DollarSign, TrendingDown, Bot, PiggyBank, Leaf } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import SustainabilityGauge from "@/components/SustainabilityGauge";
 import EmissionsChart from "@/components/EmissionsChart";
 import ModelPieChart from "@/components/ModelPieChart";
 import RecommendationCard from "@/components/RecommendationCard";
 import { getDashboardSummary, getOrgScore, listReceipts } from "@/lib/greenledger-api";
-import { dashboardSummary as mockSummary, orgScore as mockScore, emissionsOverTime, modelUsage } from "@/lib/mock-data";
+import { dashboardSummary as mockSummary, orgScore as mockScore, emissionsOverTime, modelUsage, savingsSummary } from "@/lib/mock-data";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(mockSummary);
@@ -64,6 +64,7 @@ export default function DashboardPage() {
 
   const s = summary;
   const sc = score;
+  const sv = savingsSummary;
 
   return (
     <div className="space-y-6">
@@ -93,9 +94,40 @@ export default function DashboardPage() {
           <StatCard label="Total CO2e" value={Number(s.total_co2e_g).toFixed(1)} unit="g" icon={Cloud} trend={-12.4} trendInverted />
           <StatCard label="Energy Consumed" value={Number(s.total_energy_wh).toFixed(1)} unit="Wh" icon={Zap} trend={-8.2} trendInverted />
           <StatCard label="Water Usage" value={Number(s.total_water_ml).toFixed(0)} unit="mL" icon={Droplets} trend={-5.1} trendInverted />
-          <StatCard label="Carbon Levy" value={"$" + Number(s.total_levy_usd).toFixed(4)} icon={DollarSign} />
-          <StatCard label="Avg Savings vs Naive" value={Number(s.avg_savings_vs_naive_pct).toFixed(1)} unit="%" icon={TrendingDown} trend={4.2} />
-          <StatCard label="Total Inferences" value={Number(s.total_inferences).toLocaleString()} icon={Bot} trend={15.8} />
+          <StatCard label="API Cost Saved" value={"$" + sv.total_savings_usd.toFixed(2)} icon={PiggyBank} trend={18.5} />
+          <StatCard label="Levy to Carbon Removal" value={"$" + sv.levy_from_savings_usd.toFixed(3)} icon={Leaf} trend={18.5} />
+          <StatCard label="CO2e Avoided" value={sv.co2e_avoided_g.toFixed(1)} unit="g" icon={TrendingDown} trend={22.1} />
+        </div>
+      </div>
+
+      {/* Savings highlight banner */}
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: "rgba(34,197,94,0.06)", borderColor: "rgba(34,197,94,0.2)" }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--green-accent)" }}>
+              Green Routing Impact
+            </h3>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              {sv.total_queries_downgraded} of {sv.total_queries_routed} queries downgraded ({sv.downgrade_rate_pct}%) &middot; 20% of savings funds carbon removal
+            </p>
+          </div>
+          <div className="flex gap-6">
+            <div className="text-right">
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Original API Cost</p>
+              <p className="text-lg font-bold font-mono" style={{ color: "var(--text-secondary)" }}>${sv.total_original_cost_usd.toFixed(2)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>After Routing</p>
+              <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>${sv.total_routed_cost_usd.toFixed(2)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Saved</p>
+              <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>${sv.total_savings_usd.toFixed(2)}</p>
+            </div>
+          </div>
         </div>
       </div>
 

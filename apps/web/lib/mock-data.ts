@@ -352,10 +352,35 @@ export const levySummary = {
   confirmed_pct: 72,
   pooled_pct: 24,
   pending_pct: 4,
+  // Savings-based levy breakdown (from routing downgrades)
+  total_savings_usd: 3.42,
+  total_levy_from_savings_usd: 0.684,
+  total_co2e_avoided_g: 156.3,
+  levy_rate_pct: 20,
   destinations: [
     { name: "Stripe Climate — Frontier", amount_usd: 0.49, carbon_removed_g: 201.2, status: "confirmed" as const },
     { name: "Stripe Climate — Pooled", amount_usd: 0.16, carbon_removed_g: 0, status: "pooled" as const },
     { name: "Pending Settlement", amount_usd: 0.03, carbon_removed_g: 0, status: "pending" as const },
+  ],
+};
+
+// --- Savings from Green Routing ---
+
+export const savingsSummary = {
+  total_queries_routed: 847,
+  total_queries_downgraded: 623,
+  downgrade_rate_pct: 73.6,
+  total_original_cost_usd: 8.94,
+  total_routed_cost_usd: 5.52,
+  total_savings_usd: 3.42,
+  levy_from_savings_usd: 0.684,
+  co2e_avoided_g: 156.3,
+  top_savings_routes: [
+    { from: "claude-opus-4-6", to: "claude-haiku-4-5", count: 184, savings_usd: 1.82, co2e_avoided_g: 82.4 },
+    { from: "gpt-5.2", to: "gpt-4.1-mini", count: 156, savings_usd: 0.78, co2e_avoided_g: 38.2 },
+    { from: "claude-sonnet-4-6", to: "claude-haiku-4-5", count: 198, savings_usd: 0.52, co2e_avoided_g: 22.1 },
+    { from: "o3", to: "o3-mini", count: 12, savings_usd: 0.18, co2e_avoided_g: 9.4 },
+    { from: "gemini-3.1-pro", to: "gemini-3.1-flash-lite-preview", count: 73, savings_usd: 0.12, co2e_avoided_g: 4.2 },
   ],
 };
 
@@ -393,6 +418,7 @@ export const recentReceipts = [
     environmental_cost: { co2e_g: 0.012, water_ml: 0.04, energy_wh: 0.04 },
     offset: { levy_usd: 0.00002, status: "confirmed" as const, destination: "stripe_climate" },
     comparison: { naive_co2e_g: 0.08, savings_pct: 85 },
+    savings: { original_model: "claude-sonnet-4-6", original_api_cost_usd: 0.00612, routed_api_cost_usd: 0.00092, savings_usd: 0.00520, levy_from_savings_usd: 0.00104, co2e_avoided_g: 0.031 },
   },
   {
     id: "rcpt_002",
@@ -405,6 +431,7 @@ export const recentReceipts = [
     environmental_cost: { co2e_g: 0.18, water_ml: 0.52, energy_wh: 0.48 },
     offset: { levy_usd: 0.00036, status: "confirmed" as const, destination: "stripe_climate" },
     comparison: { naive_co2e_g: 0.72, savings_pct: 75 },
+    savings: null, // no downgrade — appropriate model selected
   },
   {
     id: "rcpt_003",
@@ -417,6 +444,7 @@ export const recentReceipts = [
     environmental_cost: { co2e_g: 4.2, water_ml: 12.1, energy_wh: 11.2 },
     offset: { levy_usd: 0.0084, status: "pooled" as const, destination: "stripe_climate" },
     comparison: { naive_co2e_g: 4.2, savings_pct: 0 },
+    savings: null, // no downgrade — reasoning task required heavy model
   },
   {
     id: "rcpt_004",
@@ -429,6 +457,7 @@ export const recentReceipts = [
     environmental_cost: { co2e_g: 0.005, water_ml: 0.01, energy_wh: 0.01 },
     offset: { levy_usd: 0.00001, status: "confirmed" as const, destination: "stripe_climate" },
     comparison: { naive_co2e_g: 0.08, savings_pct: 94 },
+    savings: { original_model: "claude-opus-4-6", original_api_cost_usd: 0.01932, routed_api_cost_usd: 0.00005, savings_usd: 0.01927, levy_from_savings_usd: 0.00385, co2e_avoided_g: 0.128 },
   },
   {
     id: "rcpt_005",
@@ -441,5 +470,6 @@ export const recentReceipts = [
     environmental_cost: { co2e_g: 0.09, water_ml: 0.28, energy_wh: 0.22 },
     offset: { levy_usd: 0.00018, status: "confirmed" as const, destination: "stripe_climate" },
     comparison: { naive_co2e_g: 0.35, savings_pct: 74 },
+    savings: { original_model: "claude-sonnet-4-6", original_api_cost_usd: 0.00870, routed_api_cost_usd: 0.00012, savings_usd: 0.00858, levy_from_savings_usd: 0.00172, co2e_avoided_g: 0.045 },
   },
 ];

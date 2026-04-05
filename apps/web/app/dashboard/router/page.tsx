@@ -190,6 +190,11 @@ export default function RouterPage() {
                           +{d.savings_if_switched_pct}% CO2 saved
                         </p>
                       )}
+                      {d.accepted_recommendation && d.savings_if_switched_pct > 0 && (
+                        <p className="text-[10px] font-mono mt-1" style={{ color: "var(--amber-accent)" }}>
+                          20% of API savings → carbon removal
+                        </p>
+                      )}
                     </div>
                   </div>
 
