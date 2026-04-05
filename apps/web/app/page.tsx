@@ -117,32 +117,6 @@ const WITH = [
   "Accurate, auditable environmental reporting",
 ];
 
-const BEFORE_CODE = `import anthropic
-
-client = anthropic.Anthropic()
-response = client.messages.create(
-    model="claude-opus-4-6",    # Most capable = most carbon
-    messages=[{"role": "user",
-               "content": "Summarize this email..."}]
-)
-
-# No idea what this cost the planet.`;
-
-const AFTER_CODE = `import greenledger
-
-gl = greenledger.Client(api_key="gl_...")
-response = gl.infer(
-    prompt="Summarize this email...",
-    quality="standard",          # GL picks greenest match
-    agent_id="inbox-agent",
-)
-
-print(response.receipt)
-# { model: "claude-haiku-3",    ← auto-selected
-#   co2e: "0.08g",  energy: "0.28Wh",
-#   region: "us-west-2 (78% renewable)",
-#   offset: "$0.001" → Stripe Climate }`;
-
 /* ── Nav ───────────────────────────────────────────────────────── */
 function Nav({ user }: { user: any }) {
   const [scrolled, setScrolled] = useState(false);
@@ -198,33 +172,6 @@ function Nav({ user }: { user: any }) {
         </nav>
       </div>
     </header>
-  );
-}
-
-/* ── Code block ────────────────────────────────────────────────── */
-function Code({ code, label, accent }: { code: string; label: string; accent?: boolean }) {
-  return (
-    <div className="rounded-xl overflow-hidden h-full" style={{
-      border: `1px solid ${accent ? "rgba(34,197,94,0.2)" : "#1e1e1e"}`,
-      backgroundColor: accent ? "#090f09" : "#0d0d0d",
-    }}>
-      <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderBottom: `1px solid ${accent ? "#1a2e1a" : "#1a1a1a"}` }}>
-        {[accent ? "#1e3a1e" : "#2a2a2a", "#1e1e1e", "#1e1e1e"].map((c, i) => (
-          <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c }} />
-        ))}
-        <span className="text-[10px] ml-2" style={{ color: accent ? "rgba(34,197,94,0.45)" : "#3a3a3a", fontFamily: "var(--font-mono)" }}>
-          {label}
-        </span>
-      </div>
-      <pre className="px-4 py-4 text-xs leading-relaxed overflow-x-auto" style={{
-        fontFamily: "var(--font-mono)",
-        color: accent ? "#7ec87e" : "#4a4a4a",
-        margin: 0,
-        whiteSpace: "pre",
-      }}>
-        {code}
-      </pre>
-    </div>
   );
 }
 
@@ -581,39 +528,131 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          HOW IT WORKS — code comparison
+          HOW IT WORKS — visual workflow
       ══════════════════════════════════════════════════════ */}
       <section id="how-it-works" className="py-24 px-6" style={{ borderTop: "1px solid #111" }}>
         <div className="max-w-6xl mx-auto">
-          <div className="mb-12">
-            <p className="label mb-3" style={{ color: "#3a3a3a" }}>Developer experience</p>
+          <div className="mb-14">
+            <p className="label mb-3" style={{ color: "#3a3a3a" }}>How it works</p>
             <h2
               className="font-black"
               style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em" }}
             >
-              One wrapper.
-              <span style={{ color: "#3a3a3a" }}> Everything handled.</span>
+              Every inference.
+              <span style={{ color: "#3a3a3a" }}> Accounted for.</span>
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 items-stretch">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                  <X className="w-2.5 h-2.5" style={{ color: "#f87171" }} />
+          {/* ── Horizontal flow ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr auto 1fr auto 1fr auto 1fr", alignItems: "center", gap: 0, marginBottom: "3rem" }}>
+            {[
+              {
+                num: "01",
+                title: "Prompt Sent",
+                desc: "Your agent calls GreenLedger instead of the model provider directly. One line change.",
+                color: "#525252",
+                tag: "agent",
+              },
+              {
+                num: "02",
+                title: "Router Scores",
+                desc: "Complexity classifier evaluates the prompt. Grid carbon intensity checked by region.",
+                color: "#f59e0b",
+                tag: "router",
+              },
+              {
+                num: "03",
+                title: "Model Selected",
+                desc: "Cheapest model that meets your quality bar is chosen. Haiku handles ~80% of typical tasks.",
+                color: "#22c55e",
+                tag: "routing",
+              },
+              {
+                num: "04",
+                title: "Response + Receipt",
+                desc: "Inference runs. Response returned to your agent alongside a full environmental receipt.",
+                color: "#60a5fa",
+                tag: "inference",
+              },
+              {
+                num: "05",
+                title: "Offset + Audit",
+                desc: "Micro-levy routed to Stripe Climate. Receipt logged to dashboard. Budget deducted.",
+                color: "#22c55e",
+                tag: "offset",
+              },
+            ].map((step, i) => (
+              <>
+                <div
+                  key={step.num}
+                  style={{
+                    padding: "1.5rem 1.25rem",
+                    borderTop: `2px solid ${step.color}`,
+                    backgroundColor: "#0d0d0d",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.6rem",
+                    minHeight: "180px",
+                  }}
+                >
+                  <span
+                    className="font-condensed"
+                    style={{ fontSize: "2.2rem", color: step.color, letterSpacing: "-0.02em", lineHeight: 1 }}
+                  >
+                    {step.num}
+                  </span>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#f0ece4", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                    {step.title}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#3a3a3a", lineHeight: 1.6 }}>
+                    {step.desc}
+                  </p>
                 </div>
-                <span className="text-xs" style={{ color: "#3a3a3a" }}>Without carbon awareness</span>
-              </div>
-              <Code code={BEFORE_CODE} label="without.py" />
+                {i < 4 && (
+                  <div key={`arrow-${i}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                    <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+                      <path d="M0 6H17M17 6L12 1M17 6L12 11" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                )}
+              </>
+            ))}
+          </div>
+
+          {/* ── Receipt preview strip ── */}
+          <div
+            style={{
+              backgroundColor: "#0a0f0a",
+              border: "1px solid rgba(34,197,94,0.12)",
+              borderRadius: "8px",
+              padding: "1.25rem 1.5rem",
+              display: "grid",
+              gridTemplateColumns: "auto 1fr",
+              gap: "1.5rem",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#22c55e", boxShadow: "0 0 6px #22c55e", display: "inline-block" }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#22c55e", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                Sample Receipt
+              </span>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded flex items-center justify-center" style={{ backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)" }}>
-                  <Check className="w-2.5 h-2.5" style={{ color: "#22c55e" }} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "1.5rem" }}>
+              {[
+                { label: "Requested", value: "opus-4-6" },
+                { label: "Routed to", value: "haiku-4-5", green: true },
+                { label: "CO₂e", value: "0.047g" },
+                { label: "Energy", value: "0.20 Wh" },
+                { label: "Water", value: "0.36 mL" },
+                { label: "Savings", value: "80%", green: true },
+                { label: "Levy", value: "$0.000024 → Stripe Climate" },
+              ].map((f) => (
+                <div key={f.label}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "3px" }}>{f.label}</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: (f as any).green ? "#22c55e" : "#5a5a5a" }}>{f.value}</p>
                 </div>
-                <span className="text-xs" style={{ color: "#6a6a6a" }}>With GreenLedger</span>
-              </div>
-              <Code code={AFTER_CODE} label="with_greenledger.py" accent />
+              ))}
             </div>
           </div>
         </div>
