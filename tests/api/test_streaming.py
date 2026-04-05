@@ -52,7 +52,7 @@ class TestStreamAnthropicProvider:
                 for e in [event1, event2, event3]:
                     yield e
 
-            def get_final_message(self):
+            async def get_final_message(self):
                 return mock_message
 
         async def mock_stream_fn(*args, **kwargs):
@@ -139,7 +139,7 @@ class TestStreamUnsupportedModel:
     async def test_google_streaming_not_supported(self):
         with pytest.raises(StreamingNotSupported, match="not supported"):
             async for _ in stream_inference(
-                model_id="gemini-3.1-flash",
+                model_id="gemini-3.1-flash-lite-preview",
                 prompt="Hello",
                 max_tokens=100,
                 api_key="sk-test",
