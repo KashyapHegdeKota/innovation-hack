@@ -802,7 +802,115 @@ async def maybe_reroute(
         )
         return final
 
-    console.print(f"  [dim]Keeping {sel_display}.[/]\n")
+    console.print(f"  [dim]Keeping {sel_display}.[/]")
+    # Show disappointed GIF when user rejects greener suggestion
+    import random
+    sad_arts = [
+        (
+            "[yellow]"
+            "    ╭──────────────────────────────╮\n"
+            "    │   🌍  The Earth felt that      │\n"
+            "    │                                │\n"
+            "    │        (╥﹏╥)                  │\n"
+            "    │                                │\n"
+            "    │   You chose the gas guzzler    │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[yellow]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🔥 Planet warming up...       │\n"
+            "    │                                │\n"
+            "    │        ಠ_ಠ                    │\n"
+            "    │                                │\n"
+            "    │   A polar bear just sighed     │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[yellow]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🧊 Icecap status: melting     │\n"
+            "    │                                │\n"
+            "    │    (ノಠ益ಠ)ノ彡┻━┻             │\n"
+            "    │                                │\n"
+            "    │   Haiku could've done this     │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[red]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🐧 A penguin lost its home    │\n"
+            "    │                                │\n"
+            "    │        (ಥ_ಥ)                  │\n"
+            "    │        /|  |\\                  │\n"
+            "    │                                │\n"
+            "    │   Was Opus really necessary?   │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[yellow]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🌡️  +0.0001°C  thanks to you  │\n"
+            "    │                                │\n"
+            "    │        ʕ •̀ ω •́ ʔ              │\n"
+            "    │                                │\n"
+            "    │   Every watt counts, friend    │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[red]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  💀 Overkill confirmed         │\n"
+            "    │                                │\n"
+            "    │      ¯\\_(ツ)_/¯               │\n"
+            "    │                                │\n"
+            "    │   Using a rocket to buy milk   │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[yellow]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🌲 A tree just facepalmed     │\n"
+            "    │                                │\n"
+            "    │        (ᗒᗣᗕ)                 │\n"
+            "    │                                │\n"
+            "    │   That prompt was 5 words...   │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[red]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  ⚡ GPU go BRRRRRR             │\n"
+            "    │                                │\n"
+            "    │       (⊙_⊙;)                  │\n"
+            "    │                                │\n"
+            "    │   Data center fans intensify   │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[yellow]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🐋 A whale just judged you    │\n"
+            "    │                                │\n"
+            "    │       ≧◠‿◠≦                   │\n"
+            "    │                                │\n"
+            "    │   The ocean remembers this     │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+        (
+            "[red]"
+            "    ╭──────────────────────────────╮\n"
+            "    │  🏭 Carbon printer go brr      │\n"
+            "    │                                │\n"
+            "    │      ୧(๑•̀ɜ•́๑)૭              │\n"
+            "    │                                │\n"
+            "    │   Greta is typing...           │\n"
+            "    ╰──────────────────────────────╯[/]"
+        ),
+    ]
+    console.print()
+    console.print(random.choice(sad_arts))
+    console.print()
     return selected_id
 
 # ── Main REPL ────────────────────────────────────────────────────────────────────
