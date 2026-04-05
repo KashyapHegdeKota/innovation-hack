@@ -2,31 +2,224 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────
+   DESIGN SYSTEM — Premium B2B Climate-Tech
+   Inspired by: Vercel, Linear, Stripe, Apple
+   Philosophy: Confident restraint. Every pixel earns its place.
+───────────────────────────────────────────────────────────── */
+
 :root {
-  --bg-primary: #0a0f0d;
-  --bg-secondary: #111916;
-  --bg-card: #151d19;
-  --bg-card-hover: #1a2420;
-  --border: #1e2e26;
-  --border-bright: #2a3f33;
-  --text-primary: #e8efe9;
-  --text-secondary: #8fa898;
-  --text-muted: #5a7565;
-  --green-accent: #22c55e;
-  --green-dim: #166534;
-  --red-accent: #ef4444;
-  --amber-accent: #f59e0b;
-  --blue-accent: #3b82f6;
+  /* ── Backgrounds ──────────────────────────────────────────── */
+  --bg-primary:    #080808;   /* page base             */
+  --bg-secondary:  #0f0f0f;   /* subtle separation     */
+  --bg-card:       #111111;   /* card surface          */
+  --bg-card-hover: #161616;   /* card hover / elevated */
+  --bg-raised:     #1a1a1a;   /* tooltips, menus       */
+
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border:        #1e1e1e;   /* default               */
+  --border-bright: #2a2a2a;   /* slightly more visible */
+  --border-accent: rgba(34, 197, 94, 0.2);
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --text-primary:  #ededed;
+  --text-secondary:#a1a1a1;
+  --text-muted:    #525252;
+
+  /* ── Accent: green — used sparingly ──────────────────────── */
+  --green-accent:  #22c55e;
+  --green-bright:  #4ade80;
+  --green-dim:     #14532d;
+  --green-glow:    rgba(34, 197, 94, 0.1);
+
+  /* ── Semantic colors ──────────────────────────────────────── */
+  --red-accent:    #f87171;
+  --amber-accent:  #f59e0b;
+  --blue-accent:   #60a5fa;
+
+  /* ── Fonts ────────────────────────────────────────────────── */
+  --font-display:    var(--font-syne),   "Helvetica Neue", sans-serif;
+  --font-condensed:  var(--font-bebas),  "Impact", sans-serif;
+  --font-mono:       var(--font-jetbrains), "Courier New", monospace;
 }
 
+/* ─── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ─── Body ────────────────────────────────────────────────────── */
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-display);
+  /* Very subtle neutral grid — like graph paper */
+  background-image: radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 28px 28px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── Typography ──────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.font-mono { font-family: var(--font-mono) !important; }
+
+/* ─── Glass sidebar ───────────────────────────────────────────── */
+.glass {
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+}
+
+/* ─── Card ────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* ─── Subtle hover lift ───────────────────────────────────────── */
+.glow-hover {
+  transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
+}
+.glow-hover:hover {
+  border-color: var(--border-bright) !important;
+  background-color: var(--bg-card-hover) !important;
+  transform: translateY(-1px);
+}
+
+/* ─── Text utilities ──────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 60%, #86efac 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.label {
+  font-family: var(--font-mono) !important;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ─── Nav ─────────────────────────────────────────────────────── */
+.nav-active {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-card-hover);
+  border-left: 2px solid var(--green-accent);
+}
+
+/* ─── Animations ──────────────────────────────────────────────── */
+
+/* Live indicator */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+.pulse-live { animation: pulse-green 2s ease-in-out infinite; }
+
+/* Data numbers — very subtle, barely perceptible */
+@keyframes flicker {
+  0%, 97%, 100% { opacity: 1; }
+  98%            { opacity: 0.88; }
+}
+.data-flicker { animation: flicker 12s ease-in-out infinite; }
+
+/* Staggered entrance */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up   { animation: fadeUp 0.5s ease both; }
+.fade-up-1 { animation: fadeUp 0.5s 0.06s ease both; }
+.fade-up-2 { animation: fadeUp 0.5s 0.12s ease both; }
+.fade-up-3 { animation: fadeUp 0.5s 0.18s ease both; }
+.fade-up-4 { animation: fadeUp 0.5s 0.24s ease both; }
+.fade-up-5 { animation: fadeUp 0.5s 0.30s ease both; }
+.fade-up-6 { animation: fadeUp 0.5s 0.36s ease both; }
+
+/* Path animation for routing flow */
+@keyframes flowDash {
+  from { stroke-dashoffset: 120; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Border glow for active states */
+@keyframes borderPulse {
+  0%, 100% { border-color: var(--border); }
+  50%       { border-color: rgba(34,197,94,0.25); }
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+
+/* ─── Landing-specific ────────────────────────────────────────── */
+
+/* Topographic elevation rings */
+.topo-bg {
+  background-image:
+    repeating-radial-gradient(
+      circle at 72% 38%,
+      transparent 0, transparent 34px,
+      rgba(34,197,94,0.028) 35px, rgba(34,197,94,0.028) 36px
+    ),
+    repeating-radial-gradient(
+      circle at 28% 62%,
+      transparent 0, transparent 26px,
+      rgba(34,197,94,0.018) 27px, rgba(34,197,94,0.018) 28px
+    ),
+    repeating-radial-gradient(
+      circle at 55% 20%,
+      transparent 0, transparent 44px,
+      rgba(34,197,94,0.012) 45px, rgba(34,197,94,0.012) 46px
+    );
+}
+
+/* Infinite ticker scroll */
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track {
+  animation: tickerScroll 28s linear infinite;
+  display: flex;
+  width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+
+/* Scan line for live counter */
+@keyframes scanLine {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Counter reveal */
+@keyframes counterReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.counter-reveal { animation: counterReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Fade in from bottom on scroll */
+@keyframes scrollReveal {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Warm amber for the problem */
+.text-amber { color: #d97706; }
+.bg-amber   { background-color: rgba(217, 119, 6, 0.08); }
+
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
+  .font-condensed { font-family: var(--font-condensed) !important; }
 }

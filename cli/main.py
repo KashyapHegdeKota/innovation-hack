@@ -11,6 +11,9 @@ import subprocess
 import httpx
 import time
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 from dataclasses import dataclass, field
 from typing import Optional
 
