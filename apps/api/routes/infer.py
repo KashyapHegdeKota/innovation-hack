@@ -101,7 +101,7 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
         latency_ms=result.latency_ms,
         receipt=receipt,
     )
-os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
 
 class RoutingRequest(BaseModel):
     user_prompt: str
