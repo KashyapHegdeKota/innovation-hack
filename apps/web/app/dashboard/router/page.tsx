@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, RefreshCcw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import apiClient from "@/lib/api-client";
+import { DUMMY_AGENTS, LIVE_AGENT_STUB, type DummyDecision } from "@/lib/dummy-agents";
 
-const ASSESSMENT: Record<string, { label: string; color: string; borderColor: string }> = {
-  overkill:     { label: "Overkill",     color: "#f87171", borderColor: "rgba(248,113,113,0.25)" },
-  appropriate:  { label: "Appropriate",  color: "#22c55e", borderColor: "rgba(34,197,94,0.25)"   },
-  underpowered: { label: "Underpowered", color: "#f59e0b", borderColor: "rgba(245,158,11,0.25)"  },
+const ASSESSMENT: Record<string, { label: string; color: string }> = {
+  overkill:     { label: "Overkill",     color: "#f87171" },
+  appropriate:  { label: "Appropriate",  color: "#22c55e" },
+  underpowered: { label: "Underpowered", color: "#f59e0b" },
 };
 
 const TIER_COLORS: Record<string, string> = {
@@ -28,23 +29,37 @@ const item = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } },
 };
 
+// All selectable agents: live first, then dummies
+const ALL_AGENTS = [LIVE_AGENT_STUB, ...DUMMY_AGENTS];
+
 export default function RouterPage() {
-  const [decisions,   setDecisions]   = useState<any[]>([]);
-  const [live,        setLive]        = useState(false);
-  const [loading,     setLoading]     = useState(true);
-  const [expandedId,  setExpandedId]  = useState<string | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("cli-user");
+  const [liveDecisions,   setLiveDecisions]   = useState<any[]>([]);
+  const [live,            setLive]            = useState(false);
+  const [loading,         setLoading]         = useState(true);
+  const [expandedId,      setExpandedId]      = useState<string | null>(null);
 
   const fetchDecisions = async () => {
     setLoading(true);
     try {
       const res = await apiClient.get("/v1/router/decisions");
-      setDecisions(Array.isArray(res.data) ? res.data : []);
+      setLiveDecisions(Array.isArray(res.data) ? res.data : []);
       setLive(true);
     } catch { /* offline */ }
     setLoading(false);
   };
 
   useEffect(() => { fetchDecisions(); }, []);
+
+  // When switching agents, collapse any expanded row
+  useEffect(() => { setExpandedId(null); }, [selectedAgentId]);
+
+  // Determine which decisions to show
+  const isDummy   = selectedAgentId !== "cli-user";
+  const dummyAgent = DUMMY_AGENTS.find(a => a.agent_id === selectedAgentId);
+  const decisions: any[] = isDummy
+    ? (dummyAgent?.decisions ?? [])
+    : liveDecisions;
 
   const total      = decisions.length;
   const overkill   = decisions.filter(d => d.assessment === "overkill").length;
@@ -81,6 +96,53 @@ export default function RouterPage() {
         </div>
       </motion.div>
 
+      {/* ── Agent selector ─────────────────────────────────────── */}
+      <motion.div variants={item} style={{ marginBottom: "2rem" }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "0.75rem" }}>
+          Agent
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          {ALL_AGENTS.map(agent => {
+            const isActive = agent.agent_id === selectedAgentId;
+            const dummy    = DUMMY_AGENTS.find(d => d.agent_id === agent.agent_id);
+            const score    = dummy?.sustainability_score ?? null;
+            const scoreColor = score == null ? "var(--text-muted)"
+              : score >= 75 ? "#22c55e"
+              : score >= 50 ? "#f59e0b"
+              : "#f87171";
+
+            return (
+              <button
+                key={agent.agent_id}
+                onClick={() => setSelectedAgentId(agent.agent_id)}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  padding: "0.4rem 0.9rem",
+                  borderRadius: "6px",
+                  border: isActive ? `1px solid ${scoreColor}` : "1px solid var(--border)",
+                  backgroundColor: isActive ? `${scoreColor}12` : "transparent",
+                  color: isActive ? scoreColor : "var(--text-muted)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                {agent.agent_id === "cli-user" && (
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: live ? "#22c55e" : "var(--text-muted)", display: "inline-block" }} />
+                )}
+                {agent.display_name}
+                {score !== null && (
+                  <span style={{ fontSize: "9px", opacity: 0.7 }}>{score}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+
       {/* ── Stat strip ─────────────────────────────────────────── */}
       <motion.div variants={item} style={{ borderBottom: "1px solid var(--rule)", borderTop: "1px solid var(--rule)", padding: "1.25rem 0", marginBottom: "2rem" }}>
         <div className="flex items-stretch">
@@ -109,20 +171,19 @@ export default function RouterPage() {
       <motion.div variants={item}>
         {decisions.length === 0 ? (
           <div style={{ padding: "4rem 0", textAlign: "center" }}>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-dim)" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>
               No routing decisions yet — run queries via CLI to populate
             </p>
           </div>
         ) : (
           <div style={{ borderTop: "1px solid var(--rule)" }}>
-            {decisions.map((d, rowIdx) => {
+            {decisions.map((d: any) => {
               const a        = ASSESSMENT[d.assessment] || ASSESSMENT.appropriate;
               const expanded = expandedId === d.id;
               const rerouted = d.user_selected?.model !== d.final_model;
 
               return (
                 <div key={d.id}>
-                  {/* Row */}
                   <div
                     onClick={() => setExpandedId(expanded ? null : d.id)}
                     className="cursor-pointer"
@@ -143,8 +204,7 @@ export default function RouterPage() {
                     <span style={{
                       fontFamily: "var(--font-mono)", fontSize: "9px", fontWeight: 700,
                       letterSpacing: "0.12em", textTransform: "uppercase",
-                      color: a.color, flexShrink: 0,
-                      width: 80,
+                      color: a.color, flexShrink: 0, width: 80,
                     }}>
                       {a.label}
                     </span>
@@ -219,8 +279,7 @@ export default function RouterPage() {
                                 { label: "Routed To", model: d.recommended?.model || d.final_model, co2: d.recommended?.co2e_g, energy: d.recommended?.energy_wh, green: true },
                               ].map((m) => (
                                 <div key={m.label} style={{
-                                  padding: "1rem",
-                                  borderRadius: "8px",
+                                  padding: "1rem", borderRadius: "8px",
                                   border: `1px solid ${m.green ? "rgba(34,197,94,0.2)" : "var(--border)"}`,
                                   backgroundColor: m.green ? "rgba(34,197,94,0.03)" : "var(--hover-bg)",
                                 }}>

@@ -5,6 +5,19 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, RefreshCcw } from "lucide-react";
 import { getAgentScores } from "@/lib/greenledger-api";
+import { DUMMY_AGENTS } from "@/lib/dummy-agents";
+
+// Shape dummy agents to match the API AgentSummary schema
+const DUMMY_AS_SUMMARY = DUMMY_AGENTS.map(a => ({
+  agent_id:             a.agent_id,
+  display_name:         a.display_name,
+  total_inferences:     a.total_inferences,
+  total_co2e_g:         a.total_co2e_g,
+  total_energy_wh:      a.total_energy_wh,
+  wallet_utilization_pct: a.wallet_utilization_pct,
+  sustainability_score: a.sustainability_score,
+  trend:                a.trend,
+}));
 
 function getScoreColor(s: number | null) {
   if (s == null) return "var(--text-dim)";
@@ -41,9 +54,16 @@ export default function AgentsPage() {
     setLoading(true);
     try {
       const res = await getAgentScores();
-      setAgents(Array.isArray(res.data) ? res.data : []);
+      const liveAgents = Array.isArray(res.data) ? res.data : [];
+      // Merge: live agents + dummy agents (exclude duplicates by agent_id)
+      const liveIds = new Set(liveAgents.map((a: any) => a.agent_id));
+      const merged  = [...liveAgents, ...DUMMY_AS_SUMMARY.filter(d => !liveIds.has(d.agent_id))];
+      setAgents(merged);
       setLive(true);
-    } catch { /* offline */ }
+    } catch {
+      // Offline fallback — show dummy agents only
+      setAgents(DUMMY_AS_SUMMARY);
+    }
     setLoading(false);
   };
 
