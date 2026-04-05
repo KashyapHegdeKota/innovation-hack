@@ -24,26 +24,29 @@ _wallets: dict[str, dict[str, Any]] = {}
 def add_receipt(receipt: dict[str, Any]) -> None:
     db = get_supabase_client()
     if db:
-        db.table("receipts").insert({
-            "id": receipt["id"],
-            "timestamp": receipt["timestamp"],
-            "agent_id": receipt["agent_id"],
-            "model": receipt.get("model"),
-            "provider": receipt.get("provider"),
-            "tokens_in": receipt.get("tokens_in"),
-            "tokens_out": receipt.get("tokens_out"),
-            "latency_ms": receipt.get("latency_ms"),
-            "co2e_g": receipt["environmental_cost"]["co2e_g"],
-            "energy_wh": receipt["environmental_cost"]["energy_wh"],
-            "water_ml": receipt["environmental_cost"].get("water_ml", 0),
-            "levy_usd": receipt["offset"]["levy_usd"],
-            "levy_destination": receipt["offset"].get("destination", "stripe_climate_frontier"),
-            "levy_status": receipt["offset"].get("status", "confirmed"),
-            "naive_co2e_g": receipt.get("comparison", {}).get("naive_co2e_g", 0),
-            "savings_pct": receipt.get("comparison", {}).get("savings_pct", 0),
-            "requested_model": receipt.get("requested_model"),
-            "prompt_preview": receipt.get("prompt_preview"),
-        }).execute()
+        try:
+            db.table("receipts").insert({
+                "id": receipt["id"],
+                "timestamp": receipt["timestamp"],
+                "agent_id": receipt["agent_id"],
+                "model": receipt.get("model"),
+                "provider": receipt.get("provider"),
+                "tokens_in": receipt.get("tokens_in"),
+                "tokens_out": receipt.get("tokens_out"),
+                "latency_ms": receipt.get("latency_ms"),
+                "co2e_g": receipt["environmental_cost"]["co2e_g"],
+                "energy_wh": receipt["environmental_cost"]["energy_wh"],
+                "water_ml": receipt["environmental_cost"].get("water_ml", 0),
+                "levy_usd": receipt["offset"]["levy_usd"],
+                "levy_destination": receipt["offset"].get("destination", "stripe_climate_frontier"),
+                "levy_status": receipt["offset"].get("status", "confirmed"),
+                "naive_co2e_g": receipt.get("comparison", {}).get("naive_co2e_g", 0),
+                "savings_pct": receipt.get("comparison", {}).get("savings_pct", 0),
+                "requested_model": receipt.get("requested_model"),
+                "prompt_preview": receipt.get("prompt_preview"),
+            }).execute()
+        except Exception:
+            _receipts.append(receipt)
     else:
         _receipts.append(receipt)
 
