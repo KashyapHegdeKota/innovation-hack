@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
 import { ArrowRight, ArrowUpRight, Leaf, Check, X } from "lucide-react";
+import { useUser } from "@auth0/nextjs-auth0/client";
 
 /* ── Live CO₂ counter ──────────────────────────────────────────── */
 // ~5 billion AI queries/day globally × avg 0.4g CO2 = ~2,000,000g/day
@@ -230,7 +230,7 @@ function Code({ code, label, accent }: { code: string; label: string; accent?: b
 
 /* ── Main page ─────────────────────────────────────────────────── */
 export default function LandingPage() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const co2 = useLiveCounter();
 
   return (
