@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, RefreshCcw } from "lucide-react";
 import { getAgentScores } from "@/lib/greenledger-api";
-import { agentScores as mockAgents } from "@/lib/mock-data";
 
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null) return <span style={{ color: "var(--text-muted)" }}>—</span>;
@@ -40,17 +39,18 @@ function WalletBar({ pct }: { pct: number | null }) {
 }
 
 export default function AgentsPage() {
-  const [agents, setAgents] = useState<any[]>(mockAgents);
+  const [agents, setAgents] = useState<any[]>([]);
   const [live, setLive] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchAgents = async () => {
     setLoading(true);
     try {
       const res = await getAgentScores();
       const data = Array.isArray(res.data) ? res.data : [];
-      if (data.length > 0) { setAgents(data); setLive(true); }
-    } catch { /* stay on mock */ }
+      setAgents(data);
+      setLive(true);
+    } catch { /* backend unavailable */ }
     setLoading(false);
   };
 
