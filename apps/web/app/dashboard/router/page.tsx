@@ -1,232 +1,291 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Check, X, ArrowRight, RefreshCcw } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
-} from "recharts";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, ChevronUp, RefreshCcw } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import apiClient from "@/lib/api-client";
 
-const assessmentConfig: Record<string, { label: string; color: string; bg: string }> = {
-  overkill:     { label: "Overkill",      color: "var(--red-accent)",   bg: "rgba(239,68,68,0.1)"  },
-  appropriate:  { label: "Appropriate",   color: "var(--green-accent)", bg: "rgba(34,197,94,0.1)"  },
-  underpowered: { label: "Underpowered",  color: "var(--amber-accent)", bg: "rgba(245,158,11,0.1)" },
+const ASSESSMENT: Record<string, { label: string; color: string; borderColor: string }> = {
+  overkill:     { label: "Overkill",     color: "#f87171", borderColor: "rgba(248,113,113,0.25)" },
+  appropriate:  { label: "Appropriate",  color: "#22c55e", borderColor: "rgba(34,197,94,0.25)"   },
+  underpowered: { label: "Underpowered", color: "#f59e0b", borderColor: "rgba(245,158,11,0.25)"  },
 };
 
-const tierColors: Record<string, string> = {
+const TIER_COLORS: Record<string, string> = {
   nano: "#06b6d4", light: "#22c55e", standard: "#3b82f6", heavy: "#ef4444", reasoning: "#ec4899",
 };
 
-function formatTime(iso: string) {
+function fmt(iso: string) {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-
-function shortModel(m: string) {
+function short(m: string) {
   return m.replace("claude-", "").replace("gpt-", "").replace("gemini-", "");
 }
 
+const item = {
+  hidden: { opacity: 0, y: 8 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } },
+};
+
 export default function RouterPage() {
-  const [decisions, setDecisions] = useState<any[]>([]);
-  const [live, setLive] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [decisions,   setDecisions]   = useState<any[]>([]);
+  const [live,        setLive]        = useState(false);
+  const [loading,     setLoading]     = useState(true);
+  const [expandedId,  setExpandedId]  = useState<string | null>(null);
 
   const fetchDecisions = async () => {
     setLoading(true);
     try {
       const res = await apiClient.get("/v1/router/decisions");
-      const data = Array.isArray(res.data) ? res.data : [];
-      setDecisions(data);
+      setDecisions(Array.isArray(res.data) ? res.data : []);
       setLive(true);
-    } catch { /* backend unavailable */ }
+    } catch { /* offline */ }
     setLoading(false);
   };
 
   useEffect(() => { fetchDecisions(); }, []);
 
-  const total = decisions.length;
-  const overkillCount = decisions.filter((d) => d.assessment === "overkill").length;
-  const acceptedCount = decisions.filter((d) => d.accepted_recommendation).length;
-  const avgSavings = decisions.length > 0
-    ? Math.round(decisions.reduce((a, d) => a + (d.savings_if_switched_pct || 0), 0) / decisions.length)
+  const total      = decisions.length;
+  const overkill   = decisions.filter(d => d.assessment === "overkill").length;
+  const accepted   = decisions.filter(d => d.accepted_recommendation).length;
+  const avgSavings = total > 0
+    ? Math.round(decisions.reduce((a, d) => a + (d.savings_if_switched_pct || 0), 0) / total)
     : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}>
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <motion.div variants={item} className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Green Router</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+          <h1 className="font-black" style={{ fontSize: "1.75rem", letterSpacing: "-0.04em", color: "var(--text-primary)", lineHeight: 1 }}>
+            Green Router
+          </h1>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", marginTop: "5px" }}>
             Every routing decision — why a model was picked and what alternatives were considered
-            <span className="ml-2 text-xs px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: live ? "rgba(34,197,94,0.1)" : "rgba(90,117,101,0.15)", color: live ? "var(--green-accent)" : "var(--text-muted)" }}>
-              {live ? "● Live" : "○ Mock"}
-            </span>
           </p>
         </div>
-        <button onClick={fetchDecisions} className="flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg border hover:opacity-80"
-          style={{ borderColor: "var(--border-bright)", color: "var(--text-secondary)", backgroundColor: "var(--bg-card)" }}>
-          <RefreshCcw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </button>
-      </div>
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5" style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: live ? "#22c55e" : "var(--text-muted)" }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: live ? "#22c55e" : "var(--text-muted)", display: "inline-block", animation: "pulse-green 2s ease-in-out infinite" }} />
+            {live ? "Live" : "Offline"}
+          </span>
+          <button
+            onClick={fetchDecisions}
+            className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg transition-opacity hover:opacity-70"
+            style={{ border: "1px solid var(--border)", color: "var(--text-muted)", backgroundColor: "transparent", fontFamily: "var(--font-mono)" }}
+          >
+            <RefreshCcw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} /> Refresh
+          </button>
+        </div>
+      </motion.div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: "Total Decisions",              value: total },
-          { label: "Overkill Detected",            value: overkillCount },
-          { label: "Router Recommendation Taken",  value: acceptedCount },
-          { label: "Avg CO2 Savings",              value: `+${avgSavings}%` },
-        ].map((s) => (
-          <div key={s.label} className="rounded-xl border p-4"
-            style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>{s.label}</p>
-            <p className="text-xl font-bold font-mono" style={{ color: "var(--text-primary)" }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Decision list */}
-      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-        {decisions.length === 0 ? (
-          <div className="px-5 py-12 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-            No routing decisions yet — run queries in the CLI to see them here.
-          </div>
-        ) : decisions.map((d) => {
-          const a = assessmentConfig[d.assessment] || assessmentConfig.appropriate;
-          const expanded = expandedId === d.id;
-          const wasRerouted = d.user_selected?.model !== d.final_model;
-
-          return (
-            <div key={d.id}>
-              <div
-                className="px-5 py-4 border-b cursor-pointer transition-colors hover:brightness-110 flex items-center gap-4"
-                style={{ borderColor: "var(--border)", backgroundColor: expanded ? "var(--bg-card-hover)" : "transparent" }}
-                onClick={() => setExpandedId(expanded ? null : d.id)}
-              >
-                {/* Assessment badge */}
-                <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase shrink-0"
-                  style={{ color: a.color, backgroundColor: a.bg }}>
-                  {a.label}
-                </span>
-
-                {/* Prompt */}
-                <span className="flex-1 text-sm truncate" style={{ color: "var(--text-primary)" }}>
-                  {d.prompt_preview || "(no preview)"}
-                </span>
-
-                {/* Model flow */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded"
-                    style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)" }}>
-                    {shortModel(d.user_selected?.model || d.final_model)}
-                  </span>
-                  {wasRerouted && (
-                    <>
-                      <ArrowRight className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
-                      <span className="text-xs font-mono px-2 py-0.5 rounded font-medium"
-                        style={{ backgroundColor: "rgba(34,197,94,0.15)", color: "var(--green-accent)" }}>
-                        {shortModel(d.final_model)}
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Accepted */}
-                <span className="shrink-0">
-                  {d.accepted_recommendation
-                    ? <Check className="w-4 h-4" style={{ color: "var(--green-accent)" }} />
-                    : <X className="w-4 h-4" style={{ color: "var(--red-accent)" }} />}
-                </span>
-
-                {/* Time */}
-                <span className="text-xs font-mono shrink-0" style={{ color: "var(--text-muted)" }}>
-                  {formatTime(d.timestamp)}
-                </span>
-
-                <span style={{ color: "var(--text-muted)" }}>
-                  {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </span>
+      {/* ── Stat strip ─────────────────────────────────────────── */}
+      <motion.div variants={item} style={{ borderBottom: "1px solid #1a1a1a", borderTop: "1px solid #1a1a1a", padding: "1.25rem 0", marginBottom: "2rem" }}>
+        <div className="flex items-stretch">
+          {[
+            { label: "Total Decisions",           value: String(total),         accent: false },
+            { label: "Overkill Detected",         value: String(overkill),      accent: false },
+            { label: "Recommendation Accepted",   value: String(accepted),      accent: false },
+            { label: "Avg CO₂ Savings",           value: `+${avgSavings}%`,     accent: true  },
+          ].map((s, i) => (
+            <div key={s.label} className="flex items-stretch gap-0 flex-1">
+              <div className="flex-1">
+                <p style={{ fontFamily: "var(--font-condensed)", fontSize: "clamp(2rem, 3.5vw, 3rem)", color: s.accent ? "#22c55e" : "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 0.9, marginBottom: "5px" }}>
+                  {s.value}
+                </p>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                  {s.label}
+                </p>
               </div>
-
-              {/* Expanded detail */}
-              {expanded && (
-                <div className="px-5 py-5 border-b space-y-5"
-                  style={{ backgroundColor: "var(--bg-card-hover)", borderColor: "var(--border)" }}>
-                  {/* Comparison */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-secondary)" }}>
-                      <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>User Selected</p>
-                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{d.user_selected?.model || "—"}</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                        {d.user_selected?.provider} · {d.user_selected?.tier}
-                      </p>
-                      <div className="flex gap-3 mt-2">
-                        <span className="text-xs font-mono" style={{ color: "var(--amber-accent)" }}>{d.user_selected?.energy_wh} Wh</span>
-                        <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{d.user_selected?.co2e_g}g CO2e</span>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-4"
-                      style={{ borderColor: "var(--green-accent)", borderWidth: "1.5px", backgroundColor: "rgba(34,197,94,0.05)" }}>
-                      <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--green-accent)" }}>Routed To</p>
-                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{d.recommended?.model || d.final_model}</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                        {d.recommended?.provider} · {d.recommended?.tier}
-                      </p>
-                      <div className="flex gap-3 mt-2">
-                        <span className="text-xs font-mono" style={{ color: "var(--green-accent)" }}>{d.recommended?.energy_wh} Wh</span>
-                        <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>{d.recommended?.co2e_g}g CO2e</span>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-secondary)" }}>
-                      <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>Result</p>
-                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                        {d.accepted_recommendation ? "Rerouted ✓" : "No change"}
-                      </p>
-                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Final: {d.final_model}</p>
-                      {d.savings_if_switched_pct > 0 && (
-                        <p className="text-xs font-mono mt-2" style={{ color: "var(--green-accent)" }}>
-                          +{d.savings_if_switched_pct}% CO2 saved
-                        </p>
-                      )}
-                      {d.accepted_recommendation && d.savings_if_switched_pct > 0 && (
-                        <p className="text-[10px] font-mono mt-1" style={{ color: "var(--amber-accent)" }}>
-                          20% of API savings → carbon removal
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Alternatives chart */}
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-                      Alternatives — Energy per Query (Wh)
-                    </p>
-                    <ResponsiveContainer width="100%" height={180}>
-                      <BarChart data={d.alternatives} layout="vertical" margin={{ left: 120 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                        <XAxis type="number" tick={{ fill: "var(--text-muted)", fontSize: 11 }} axisLine={{ stroke: "var(--border)" }} tickLine={false} />
-                        <YAxis type="category" dataKey="model" tick={{ fill: "var(--text-secondary)", fontSize: 11 }}
-                          axisLine={false} tickLine={false} width={110}
-                          tickFormatter={(v: string) => shortModel(v)} />
-                        <Tooltip contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border-bright)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "12px" }}
-                          formatter={(value) => [`${value} Wh`, "Energy"]} />
-                        <Bar dataKey="energy_wh" radius={[0, 4, 4, 0]}>
-                          {d.alternatives?.map((alt: any, i: number) => (
-                            <Cell key={i} fill={tierColors[alt.tier] || "#8b5cf6"}
-                              fillOpacity={alt.model === d.final_model ? 1 : 0.5} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
+              {i < 3 && <div style={{ width: "1px", backgroundColor: "#1a1a1a", margin: "0 2rem", alignSelf: "stretch" }} />}
             </div>
-          );
-        })}
-      </div>
-    </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── Decision list ───────────────────────────────────────── */}
+      <motion.div variants={item}>
+        {decisions.length === 0 ? (
+          <div style={{ padding: "4rem 0", textAlign: "center" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#2a2a2a" }}>
+              No routing decisions yet — run queries via CLI to populate
+            </p>
+          </div>
+        ) : (
+          <div style={{ borderTop: "1px solid #1a1a1a" }}>
+            {decisions.map((d, rowIdx) => {
+              const a        = ASSESSMENT[d.assessment] || ASSESSMENT.appropriate;
+              const expanded = expandedId === d.id;
+              const rerouted = d.user_selected?.model !== d.final_model;
+
+              return (
+                <div key={d.id}>
+                  {/* Row */}
+                  <div
+                    onClick={() => setExpandedId(expanded ? null : d.id)}
+                    className="cursor-pointer"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr auto auto auto",
+                      gap: "1.25rem",
+                      alignItems: "center",
+                      padding: "1rem 0",
+                      borderBottom: "1px solid #1a1a1a",
+                      borderLeft: `2px solid ${expanded ? a.color : "transparent"}`,
+                      paddingLeft: expanded ? "1rem" : "2px",
+                      transition: "all 0.15s ease",
+                      backgroundColor: expanded ? "rgba(255,255,255,0.01)" : "transparent",
+                    }}
+                  >
+                    {/* Assessment */}
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: "9px", fontWeight: 700,
+                      letterSpacing: "0.12em", textTransform: "uppercase",
+                      color: a.color, flexShrink: 0,
+                      width: 80,
+                    }}>
+                      {a.label}
+                    </span>
+
+                    {/* Prompt */}
+                    <span style={{
+                      fontFamily: "var(--font-display)", fontSize: "13px",
+                      color: "var(--text-primary)", overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {d.prompt_preview || "(no preview)"}
+                    </span>
+
+                    {/* Model routing */}
+                    <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>
+                        {short(d.user_selected?.model || d.final_model)}
+                      </span>
+                      {rerouted && (
+                        <>
+                          <span style={{ color: "#2a2a2a", fontSize: "10px" }}>→</span>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#22c55e", fontWeight: 700 }}>
+                            {short(d.final_model)}
+                          </span>
+                        </>
+                      )}
+                      {!rerouted && (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a" }}>no change</span>
+                      )}
+                    </div>
+
+                    {/* CO₂ savings */}
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: "11px", flexShrink: 0,
+                      color: d.accepted_recommendation ? "#22c55e" : "#2a2a2a",
+                      width: 60, textAlign: "right",
+                    }}>
+                      {d.accepted_recommendation && d.savings_if_switched_pct > 0 ? `−${d.savings_if_switched_pct}%` : "—"}
+                    </span>
+
+                    {/* Time + chevron */}
+                    <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#2e2e2e" }}>
+                        {fmt(d.timestamp)}
+                      </span>
+                      {expanded
+                        ? <ChevronUp  className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "#2a2a2a" }} />}
+                    </div>
+                  </div>
+
+                  {/* Expanded detail */}
+                  <AnimatePresence>
+                    {expanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                        style={{ overflow: "hidden", borderBottom: "1px solid #1a1a1a" }}
+                      >
+                        <div style={{ padding: "1.5rem 0 1.5rem 1rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+
+                          {/* Left: model comparison */}
+                          <div>
+                            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "1rem" }}>
+                              Model Comparison
+                            </p>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                              {[
+                                { label: "Requested", model: d.user_selected?.model, co2: d.user_selected?.co2e_g, energy: d.user_selected?.energy_wh, green: false },
+                                { label: "Routed To", model: d.recommended?.model || d.final_model, co2: d.recommended?.co2e_g, energy: d.recommended?.energy_wh, green: true },
+                              ].map((m) => (
+                                <div key={m.label} style={{
+                                  padding: "1rem",
+                                  borderRadius: "8px",
+                                  border: `1px solid ${m.green ? "rgba(34,197,94,0.2)" : "#1e1e1e"}`,
+                                  backgroundColor: m.green ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.02)",
+                                }}>
+                                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: m.green ? "rgba(34,197,94,0.6)" : "#2e2e2e", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>
+                                    {m.label}
+                                  </p>
+                                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "12px", fontWeight: 700, color: m.green ? "#22c55e" : "var(--text-primary)", marginBottom: "0.75rem", letterSpacing: "-0.02em" }}>
+                                    {m.model ? short(m.model) : "—"}
+                                  </p>
+                                  <div style={{ display: "flex", gap: "1rem" }}>
+                                    <div>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: m.green ? "#22c55e" : "var(--text-muted)" }}>{m.co2 ?? "—"}g</p>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "0.08em" }}>CO₂e</p>
+                                    </div>
+                                    <div>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>{m.energy ?? "—"} Wh</p>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "0.08em" }}>Energy</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {d.savings_if_switched_pct > 0 && (
+                              <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#22c55e", marginTop: "0.75rem" }}>
+                                ↓ {d.savings_if_switched_pct}% CO₂ reduction{d.accepted_recommendation ? " · accepted" : " · not accepted"}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Right: alternatives chart */}
+                          {d.alternatives?.length > 0 && (
+                            <div>
+                              <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "1rem" }}>
+                                Alternatives — Energy (Wh)
+                              </p>
+                              <ResponsiveContainer width="100%" height={Math.min(d.alternatives.length * 36 + 20, 200)}>
+                                <BarChart data={d.alternatives} layout="vertical" margin={{ left: 90, right: 16, top: 0, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" horizontal={false} />
+                                  <XAxis type="number" tick={{ fill: "#2a2a2a", fontSize: 9, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
+                                  <YAxis type="category" dataKey="model" tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }}
+                                    axisLine={false} tickLine={false} width={85} tickFormatter={(v: string) => short(v)} />
+                                  <Tooltip
+                                    contentStyle={{ backgroundColor: "#111", border: "1px solid #1e1e1e", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace" }}
+                                    formatter={(val: any) => [`${val} Wh`, "Energy"]}
+                                  />
+                                  <Bar dataKey="energy_wh" radius={[0, 3, 3, 0]}>
+                                    {d.alternatives?.map((alt: any, i: number) => (
+                                      <Cell key={i} fill={TIER_COLORS[alt.tier] || "#3b82f6"} fillOpacity={alt.model === d.final_model ? 1 : 0.35} />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+
+    </motion.div>
   );
 }

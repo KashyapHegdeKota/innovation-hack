@@ -23,8 +23,7 @@ export default function ModelPieChart({ data }: { data: ModelUsage[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="relative rounded-xl border glow-hover overflow-hidden p-5 flex-1 flex flex-col"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+    <div className="relative rounded-xl border glow-hover overflow-hidden p-5" style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
 
       <div className="absolute top-0 left-0 right-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent)" }} />
@@ -33,7 +32,7 @@ export default function ModelPieChart({ data }: { data: ModelUsage[] }) {
         Model Usage
       </h3>
 
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" style={{ flex: 1 }}>
         <PieChart>
           <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
             dataKey="value" strokeWidth={3} stroke="var(--bg-card)">

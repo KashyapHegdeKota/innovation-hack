@@ -2,17 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Cloud, Zap, Droplets, DollarSign, TrendingDown, Bot } from "lucide-react";
-
-import StatCard            from "@/components/StatCard";
-import SustainabilityGauge from "@/components/SustainabilityGauge";
-import EmissionsChart      from "@/components/EmissionsChart";
-import ModelPieChart       from "@/components/ModelPieChart";
-import RecommendationCard  from "@/components/RecommendationCard";
-import RoutingPipeline     from "@/components/RoutingPipeline";
-import ActivityTable       from "@/components/ActivityTable";
-
+import EmissionsChart     from "@/components/EmissionsChart";
+import ModelPieChart      from "@/components/ModelPieChart";
+import RecommendationCard from "@/components/RecommendationCard";
+import RoutingPipeline    from "@/components/RoutingPipeline";
+import ActivityTable      from "@/components/ActivityTable";
 import { getDashboardSummary, getOrgScore, listReceipts } from "@/lib/greenledger-api";
+
+/* ── helpers ──────────────────────────────────────────────────── */
+function getGrade(s: number) {
+  if (s >= 90) return "A+";
+  if (s >= 80) return "A";
+  if (s >= 70) return "B";
+  if (s >= 55) return "C";
+  if (s >= 40) return "D";
+  return "F";
+}
+function getLabel(s: number) {
+  if (s >= 90) return "Excellent";
+  if (s >= 75) return "Good";
+  if (s >= 50) return "Fair";
+  if (s >= 25) return "Poor";
+  return "Critical";
+}
+function getScoreColor(s: number) {
+  if (s >= 75) return "#22c55e";
+  if (s >= 50) return "#f59e0b";
+  return "#f87171";
+}
 
 const EMPTY_SUMMARY = {
   org_id: "", total_inferences: 0, total_co2e_g: 0, total_energy_wh: 0,
@@ -22,21 +39,32 @@ const EMPTY_SUMMARY = {
 };
 const EMPTY_SCORE = { current_score: 0, previous_score: null, recommendations: [] };
 
-const section = {
-  hidden: { opacity: 0, y: 12 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] as const } },
+/* ── animation variants ───────────────────────────────────────── */
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+const item = {
+  hidden: { opacity: 0, y: 10 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const } },
 };
 
-function Divider({ label }: { label: string }) {
+/* ── tiny section label ───────────────────────────────────────── */
+function Sec({ children }: { children: string }) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex-1 h-px" style={{ backgroundColor: "var(--border)" }} />
-      <span className="label">{label}</span>
-      <div className="flex-1 h-px" style={{ backgroundColor: "var(--border)" }} />
+    <div className="flex items-center gap-3 mb-4">
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700,
+        letterSpacing: "0.14em", textTransform: "uppercase", color: "#2e2e2e",
+      }}>
+        {children}
+      </span>
+      <div style={{ flex: 1, height: "1px", backgroundColor: "#1a1a1a" }} />
     </div>
   );
 }
 
+/* ── main page ────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const [summary,       setSummary]       = useState<any>(EMPTY_SUMMARY);
   const [score,         setScore]         = useState<any>(EMPTY_SCORE);
@@ -60,6 +88,11 @@ export default function DashboardPage() {
         const raw: any[] = Array.isArray(receiptsRes.data) ? receiptsRes.data : [];
         setReceipts(raw);
 
+        const downgraded  = raw.filter((r: any) => r.requested_model && r.model && r.requested_model !== r.model).length;
+        const co2eAvoided = raw.reduce((sum: number, r: any) =>
+          sum + Math.max(0, (r.comparison?.naive_co2e_g ?? 0) - (r.environmental_cost?.co2e_g ?? 0)), 0);
+        setRoutingStats({ routed: raw.length, downgraded, co2eAvoided });
+
         const byDay: Record<string, { co2e: number; energy: number }> = {};
         raw.forEach((r: any) => {
           const day = new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -81,10 +114,6 @@ export default function DashboardPage() {
           value, color: COLORS[i % COLORS.length],
         })));
 
-        const downgraded  = raw.filter((r: any) => r.requested_model && r.model && r.requested_model !== r.model).length;
-        const co2eAvoided = raw.reduce((sum: number, r: any) =>
-          sum + Math.max(0, (r.comparison?.naive_co2e_g ?? 0) - (r.environmental_cost?.co2e_g ?? 0)), 0);
-        setRoutingStats({ routed: raw.length, downgraded, co2eAvoided });
       } catch { /* offline */ }
       setLoading(false);
     }
@@ -93,64 +122,158 @@ export default function DashboardPage() {
 
   const s  = summary;
   const sc = score;
+  const scoreColor = getScoreColor(sc.current_score);
+  const change = sc.previous_score != null ? sc.current_score - sc.previous_score : null;
+
+  const metrics = [
+    { label: "CO₂ Emitted",   value: `${Number(s.total_co2e_g).toFixed(3)}g`,              accent: false },
+    { label: "Energy Used",   value: `${Number(s.total_energy_wh).toFixed(2)} Wh`,          accent: false },
+    { label: "Water Used",    value: `${Number(s.total_water_ml).toFixed(1)} mL`,            accent: false },
+    { label: "Carbon Levy",   value: `$${Number(s.total_levy_usd).toFixed(5)}`,              accent: false },
+    { label: "CO₂ Savings",   value: `${Number(s.avg_savings_vs_naive_pct).toFixed(1)}%`,   accent: true  },
+    { label: "Inferences",    value: Number(s.total_inferences).toLocaleString(),            accent: false },
+  ];
 
   return (
-    <motion.div
-      className="space-y-8"
-      initial="hidden" animate="show"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-    >
+    <motion.div variants={container} initial="hidden" animate="show">
 
-      {/* ── Header ─────────────────────────────────────────── */}
-      <motion.div variants={section}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1
-              className="font-black leading-none"
-              style={{ fontSize: "clamp(1.6rem, 3vw, 2.2rem)", letterSpacing: "-0.04em", color: "var(--text-primary)" }}
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <motion.div variants={item} className="flex items-start justify-between mb-8">
+        <div>
+          <h1
+            className="font-black"
+            style={{ fontSize: "1.75rem", letterSpacing: "-0.04em", color: "var(--text-primary)", lineHeight: 1 }}
+          >
+            Overview
+          </h1>
+          {s.period_start && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", marginTop: "5px" }}>
+              {s.period_start} — {s.period_end} · {s.active_agents} active agent{s.active_agents !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
+        <div
+          className="flex items-center gap-1.5"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: live ? "#22c55e" : "var(--text-muted)" }}
+        >
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%", display: "inline-block",
+            backgroundColor: loading ? "#f59e0b" : live ? "#22c55e" : "var(--text-muted)",
+            animation: "pulse-green 2s ease-in-out infinite",
+          }} />
+          {loading ? "Connecting" : live ? "Live" : "Offline"}
+        </div>
+      </motion.div>
+
+      {/* ── Hero: grade word + score left / metrics right ────────── */}
+      <motion.div
+        variants={item}
+        style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "2.5rem", marginBottom: "2.5rem" }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 0 }}>
+
+          {/* LEFT — grade word dominates */}
+          <div style={{ borderRight: "1px solid #1a1a1a", paddingRight: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+
+            {/* The word: EXCELLENT / GOOD / FAIR etc */}
+            <span
+              className="font-condensed block"
+              style={{
+                fontSize: "clamp(3.5rem, 8vw, 7rem)",
+                color: scoreColor,
+                letterSpacing: "-0.02em",
+                lineHeight: 0.85,
+                marginBottom: "0.75rem",
+              }}
             >
-              Overview
-            </h1>
-            {s.period_start && (
-              <p className="label mt-1.5">
-                {s.period_start} — {s.period_end} · {s.active_agents} active agent{s.active_agents !== 1 ? "s" : ""}
+              {sc.current_score > 0 ? getLabel(sc.current_score) : "—"}
+            </span>
+
+            {/* Score number row */}
+            <div className="flex items-baseline gap-3" style={{ marginBottom: "0.5rem" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "clamp(1.8rem, 3vw, 2.6rem)",
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
+                  letterSpacing: "-0.05em",
+                  lineHeight: 1,
+                }}
+              >
+                {sc.current_score || 0}
+              </span>
+              <span
+                className="font-condensed"
+                style={{ fontSize: "1.8rem", color: scoreColor, letterSpacing: "-0.02em", lineHeight: 1 }}
+              >
+                {getGrade(sc.current_score)}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)" }}>
+                / 100
+              </span>
+            </div>
+
+            {/* Change indicator */}
+            {change !== null && (
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: change >= 0 ? "#22c55e" : "#f87171" }}>
+                {change >= 0 ? "↑" : "↓"} {Math.abs(change)} pts vs last period
               </p>
             )}
           </div>
 
-          <span
-            className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-medium"
-            style={{
-              backgroundColor: live ? "rgba(34,197,94,0.07)" : "var(--bg-card)",
-              border: `1px solid ${live ? "rgba(34,197,94,0.15)" : "var(--border)"}`,
-              color: live ? "var(--green-accent)" : "var(--text-muted)",
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            <span className={live ? "pulse-live" : ""} style={{ fontSize: "6px" }}>●</span>
-            {loading ? "Connecting" : live ? "Live" : "Offline"}
-          </span>
+          {/* RIGHT — 3×2 metrics grid, internal rules only */}
+          <div style={{ paddingLeft: "2.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", height: "100%" }}>
+              {metrics.map((m, i) => (
+                <div
+                  key={m.label}
+                  style={{
+                    borderLeft:   i % 3 !== 0 ? "1px solid #1a1a1a" : "none",
+                    borderBottom: i < 3        ? "1px solid #1a1a1a" : "none",
+                    padding: `${i < 3 ? "0" : "1.25rem"} ${i % 3 !== 2 ? "1.25rem" : "0"} ${i < 3 ? "1.25rem" : "0"} ${i % 3 !== 0 ? "1.25rem" : "0"}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "clamp(1rem, 1.5vw, 1.35rem)",
+                      fontWeight: 700,
+                      color: m.accent ? "#22c55e" : "var(--text-primary)",
+                      letterSpacing: "-0.04em",
+                      lineHeight: 1,
+                      display: "block",
+                      marginBottom: "5px",
+                    }}
+                  >
+                    {m.value}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "9px",
+                      color: "var(--text-muted)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    {m.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </motion.div>
 
-      {/* ── Gauge + Metrics ─────────────────────────────────── */}
-      <motion.div variants={section} className="grid grid-cols-12 gap-4">
-        <div className="col-span-4">
-          <SustainabilityGauge score={sc.current_score} previousScore={sc.previous_score} />
-        </div>
-        <div className="col-span-8 grid grid-cols-3 gap-4 content-start">
-          <StatCard label="Total CO₂e"      value={Number(s.total_co2e_g).toFixed(3)}           unit="g"  icon={Cloud}        />
-          <StatCard label="Energy"          value={Number(s.total_energy_wh).toFixed(2)}         unit="Wh" icon={Zap}          />
-          <StatCard label="Water"           value={Number(s.total_water_ml).toFixed(1)}           unit="mL" icon={Droplets}     />
-          <StatCard label="Carbon Levy"     value={"$" + Number(s.total_levy_usd).toFixed(5)}          icon={DollarSign}  />
-          <StatCard label="Avg CO₂ Savings" value={Number(s.avg_savings_vs_naive_pct).toFixed(1)} unit="%" icon={TrendingDown} accent />
-          <StatCard label="Inferences"      value={Number(s.total_inferences).toLocaleString()}        icon={Bot}         />
-        </div>
-      </motion.div>
-
-      {/* ── Routing Pipeline ────────────────────────────────── */}
-      <motion.div variants={section} className="space-y-3">
-        <Divider label="Green Router" />
+      {/* ── Green Router ──────────────────────────────────────────── */}
+      <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+        <Sec>Green Router</Sec>
         <RoutingPipeline
           routedCount={routingStats.routed}
           downgradeCount={routingStats.downgraded}
@@ -159,54 +282,49 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      {/* ── Charts ──────────────────────────────────────────── */}
-      <motion.div variants={section} className="space-y-3">
-        <Divider label="Emissions data" />
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-8 flex flex-col">
-            {emissionsData.length > 0 ? (
-              <EmissionsChart data={emissionsData} />
-            ) : (
-              <div
-                className="rounded-xl flex-1 flex items-center justify-center py-14 text-center"
-                style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
-              >
-                <div>
-                  <p className="text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
-                    No emissions data yet
+      {/* ── Emissions chart + model breakdown ─────────────────────── */}
+      <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+        <Sec>Emissions</Sec>
+        <div className="grid grid-cols-12 gap-5">
+          <div className="col-span-8" style={{ height: 440 }}>
+            {emissionsData.length > 0
+              ? <div style={{ height: "100%" }}><EmissionsChart data={emissionsData} /></div>
+              : (
+                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#2a2a2a" }}>
+                    No data yet — run a CLI query to populate
                   </p>
-                  <p className="label">Run a CLI query to populate the timeline</p>
                 </div>
-              </div>
-            )}
+              )
+            }
           </div>
-          <div className="col-span-4 flex flex-col">
-            {modelData.length > 0 ? (
-              <ModelPieChart data={modelData} />
-            ) : (
-              <div
-                className="rounded-xl flex-1 flex items-center justify-center p-8 text-center"
-                style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
-              >
-                <p className="label">No model data yet</p>
-              </div>
-            )}
+          <div className="col-span-4" style={{ height: 440 }}>
+            {modelData.length > 0
+              ? <div style={{ height: "100%" }}><ModelPieChart data={modelData} /></div>
+              : (
+                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#2a2a2a" }}>
+                    No model data yet
+                  </p>
+                </div>
+              )
+            }
           </div>
         </div>
       </motion.div>
 
-      {/* ── Activity ────────────────────────────────────────── */}
+      {/* ── Recent activity ───────────────────────────────────────── */}
       {receipts.length > 0 && (
-        <motion.div variants={section} className="space-y-3">
-          <Divider label="Recent activity" />
+        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+          <Sec>Recent Activity</Sec>
           <ActivityTable receipts={receipts} />
         </motion.div>
       )}
 
-      {/* ── Recommendations ─────────────────────────────────── */}
+      {/* ── Recommendations ───────────────────────────────────────── */}
       {sc.recommendations?.length > 0 && (
-        <motion.div variants={section} className="space-y-3">
-          <Divider label="Optimization insights" />
+        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem" }}>
+          <Sec>Optimization Insights</Sec>
           <div className="space-y-2">
             {sc.recommendations.map((rec: any) => (
               <RecommendationCard

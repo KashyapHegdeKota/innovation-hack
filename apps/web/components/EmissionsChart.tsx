@@ -37,8 +37,7 @@ export default function EmissionsChart({ data, title = "Emissions Over Time" }: 
   const singleDay = data.length <= 1;
 
   return (
-    <div className="relative rounded-xl border glow-hover overflow-hidden p-5 flex-1 flex flex-col"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+    <div className="relative rounded-xl border glow-hover overflow-hidden p-5" style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
 
       <div className="absolute top-0 left-0 right-0 h-px"
         style={{ background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent)" }} />
@@ -57,7 +56,7 @@ export default function EmissionsChart({ data, title = "Emissions Over Time" }: 
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" style={{ flex: 1 }}>
         {singleDay ? (
           // Single day — dual Y axes so CO2e and Energy scale independently
           <ComposedChart data={data} margin={{ top: 4, right: 40, bottom: 0, left: 0 }}>
