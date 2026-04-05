@@ -48,14 +48,14 @@ const TICKER_ITEMS = [
 function Ticker() {
   const items = [...TICKER_ITEMS, ...TICKER_ITEMS]; // duplicate for seamless loop
   return (
-    <div className="overflow-hidden" style={{ borderTop: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a" }}>
+    <div className="overflow-hidden" style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
       <div className="ticker-track py-3">
         {items.map((item, i) => (
           <span key={i} className="flex items-center shrink-0">
-            <span className="text-xs px-8" style={{ color: "#5a5a5a", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+            <span className="text-xs px-8" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
               {item}
             </span>
-            <span style={{ color: "#2a2a2a", fontSize: "8px" }}>◆</span>
+            <span style={{ color: "var(--border-bright)", fontSize: "8px" }}>◆</span>
           </span>
         ))}
       </div>
@@ -192,7 +192,7 @@ function CarbonChart() {
   const xTicks = [1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100];
 
   return (
-    <div style={{ backgroundColor: "#0d0d0d", border: "1px solid #1e1e1e", borderRadius: "12px", padding: "1.75rem" }}>
+    <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "1.75rem" }}>
       {/* Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#6b7280", whiteSpace: "nowrap" }}>
@@ -342,8 +342,8 @@ function Nav({ user }: { user: any }) {
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        borderBottom: scrolled ? "1px solid #1a1a1a" : "1px solid transparent",
-        backgroundColor: scrolled ? "rgba(9,11,9,0.95)" : "transparent",
+        borderBottom: scrolled ? `1px solid ${C.border}` : "1px solid transparent",
+        backgroundColor: scrolled ? C.navBg : "transparent",
         backdropFilter: scrolled ? "blur(24px)" : "none",
       }}
     >
@@ -355,7 +355,7 @@ function Nav({ user }: { user: any }) {
           >
             <Leaf className="w-3.5 h-3.5" style={{ color: "#22c55e" }} />
           </div>
-          <span className="text-sm font-bold" style={{ fontFamily: "var(--font-display)", color: "#ededed", letterSpacing: "-0.02em" }}>
+          <span className="text-sm font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
             GreenLedger
           </span>
         </Link>
@@ -364,9 +364,9 @@ function Nav({ user }: { user: any }) {
           {["Features", "How it works"].map(item => (
             <a key={item} href={`#${item.toLowerCase().replace(/ /g, "-")}`}
               className="text-xs transition-colors duration-100"
-              style={{ color: "#525252", fontFamily: "var(--font-display)" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#a1a1a1")}
-              onMouseLeave={e => (e.currentTarget.style.color = "#525252")}
+              style={{ color: "var(--text-muted)", fontFamily: "var(--font-display)" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "var(--text-secondary)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
             >
               {item}
             </a>
@@ -374,10 +374,10 @@ function Nav({ user }: { user: any }) {
           <button
             onClick={toggleTheme}
             className="w-7 h-7 rounded-md flex items-center justify-center transition-colors duration-100"
-            style={{ color: "#525252", border: "1px solid #1e1e1e", backgroundColor: "transparent" }}
+            style={{ color: "var(--text-muted)", border: "1px solid var(--border)", backgroundColor: "transparent" }}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#a1a1a1"; (e.currentTarget as HTMLElement).style.borderColor = "#2a2a2a"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#525252"; (e.currentTarget as HTMLElement).style.borderColor = "#1e1e1e"; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--border-bright)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; }}
           >
             {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
           </button>
@@ -400,10 +400,30 @@ function Nav({ user }: { user: any }) {
 /* ── Main page ─────────────────────────────────────────────────── */
 export default function LandingPage() {
   const { user } = useUser();
+  const { theme } = useTheme();
   const co2 = useLiveCounter();
+  const dk = theme === "dark";
+
+  // Palette — switches with theme
+  const C = {
+    bg:          dk ? "#090b09"        : "#f8f8f6",
+    bgSection:   dk ? "#060808"        : "#f0f0ed",
+    bgCard:      dk ? "#0d0d0d"        : "#ffffff",
+    bgCardAlt:   dk ? "#0a0f0a"        : "#f4f9f4",
+    text:        dk ? "#f0ece4"        : "#111110",
+    textSub:     dk ? "#a1a1a1"        : "#4a4a47",
+    textMuted:   dk ? "#525252"        : "#888884",
+    textDim:     dk ? "#3a3a3a"        : "#b0b0aa",
+    textDim2:    dk ? "#2a2a2a"        : "#c8c8c4",
+    border:      dk ? "#1a1a1a"        : "#e2e2de",
+    borderB:     dk ? "#2a2a2a"        : "#d0d0cb",
+    rule:        dk ? "#111"           : "#e8e8e4",
+    navBg:       dk ? "rgba(9,11,9,0.95)"  : "rgba(248,248,246,0.95)",
+    problemBg:   dk ? "rgba(9,11,9,0.3)"  : "rgba(248,248,246,0.3)",
+  };
 
   return (
-    <div style={{ backgroundColor: "#090b09", color: "#f0ece4", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: C.bg, color: C.text, minHeight: "100vh" }}>
       <Nav user={user} />
 
       {/* ══════════════════════════════════════════════════════
@@ -428,7 +448,7 @@ export default function LandingPage() {
                 style={{
                   fontSize: "clamp(2rem, 3.6vw, 3.2rem)",
                   letterSpacing: "-0.04em",
-                  color: "#f0ece4",
+                  color: C.text,
                 }}
               >
                 In 5 years, no serious company will deploy AI agents without{" "}
@@ -436,18 +456,18 @@ export default function LandingPage() {
               </p>
 
               {/* Rule */}
-              <div style={{ height: "1px", backgroundColor: "#1e1e1e", marginBottom: "1.5rem" }} />
+              <div style={{ height: "1px", backgroundColor: C.border, marginBottom: "1.5rem" }} />
 
               {/* Sub-headline + CTA */}
               <h1
                 className="font-black leading-tight mb-3"
-                style={{ fontSize: "clamp(1.2rem, 1.8vw, 1.6rem)", letterSpacing: "-0.03em", color: "#a1a1a1" }}
+                style={{ fontSize: "clamp(1.2rem, 1.8vw, 1.6rem)", letterSpacing: "-0.03em", color: C.textSub }}
               >
                 Track it.{" "}
                 <span style={{ color: "#22c55e" }}>Route it.</span>
                 {" "}Remove it.
               </h1>
-              <p className="text-sm leading-relaxed mb-6" style={{ color: "#444", maxWidth: "32rem" }}>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: C.textMuted, maxWidth: "32rem" }}>
                 GreenLedger is the carbon accountability layer for AI agents —
                 routing to greener models, budgeting carbon per agent,
                 and offsetting every inference. One SDK. No prompt rewrites.
@@ -466,9 +486,9 @@ export default function LandingPage() {
                 <Link
                   href="#how-it-works"
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium"
-                  style={{ color: "#5a5a5a", border: "1px solid #1e1e1e" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#a1a1a1"; (e.currentTarget as HTMLElement).style.borderColor = "#2a2a2a"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#5a5a5a"; (e.currentTarget as HTMLElement).style.borderColor = "#1e1e1e"; }}
+                  style={{ color: C.textMuted, border: `1px solid ${C.border}` }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = C.textSub; (e.currentTarget as HTMLElement).style.borderColor = C.borderB; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = C.textMuted; (e.currentTarget as HTMLElement).style.borderColor = C.border; }}
                 >
                   See how it works <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
@@ -476,7 +496,7 @@ export default function LandingPage() {
             </div>
 
             {/* ── RIGHT: live counter + stats ── */}
-            <div className="col-span-5 flex flex-col" style={{ borderLeft: "1px solid #1a1a1a", paddingLeft: "2.5rem" }}>
+            <div className="col-span-5 flex flex-col" style={{ borderLeft: `1px solid ${C.border}`, paddingLeft: "2.5rem" }}>
 
               {/* Label */}
               <div className="flex items-center justify-between mb-3">
@@ -501,7 +521,7 @@ export default function LandingPage() {
               >
                 {formatCounter(co2)}
               </span>
-              <p style={{ color: "#3a2a12", fontFamily: "var(--font-mono)", fontSize: "10px", marginBottom: "1.25rem" }}>
+              <p style={{ color: C.textDim, fontFamily: "var(--font-mono)", fontSize: "10px", marginBottom: "1.25rem" }}>
                 of CO₂ since tab opened · +23,148 g/sec
               </p>
 
@@ -511,13 +531,13 @@ export default function LandingPage() {
                 { value: "90 TWh",     label: "AI data center demand 2026", sub: "10× increase from 2022", green: false },
                 { value: "0",          label: "real-time AI carbon trackers", sub: "For agents. Until now.", green: true },
               ].map((s, i) => (
-                <div key={i} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "0.6rem", paddingBottom: "0.6rem" }}>
+                <div key={i} style={{ borderTop: `1px solid ${C.border}`, paddingTop: "0.6rem", paddingBottom: "0.6rem" }}>
                   <span className="font-condensed block" style={{ fontSize: "clamp(1.6rem, 2.4vw, 2.2rem)", color: s.green ? "#22c55e" : "#c87d10", letterSpacing: "-0.02em", lineHeight: 0.9 }}>{s.value}</span>
-                  <span className="block mt-0.5" style={{ fontSize: "11px", fontWeight: 500, color: "#4a4a4a" }}>{s.label}</span>
-                  <span className="block" style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a" }}>{s.sub}</span>
+                  <span className="block mt-0.5" style={{ fontSize: "11px", fontWeight: 500, color: C.textMuted }}>{s.label}</span>
+                  <span className="block" style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: C.textDim }}>{s.sub}</span>
                 </div>
               ))}
-              <div style={{ borderTop: "1px solid #1a1a1a" }} />
+              <div style={{ borderTop: `1px solid ${C.border}` }} />
             </div>
 
           </div>
@@ -530,14 +550,14 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           THE PROBLEM — stark, urgent
       ══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6" style={{ backgroundColor: "#060808" }}>
+      <section className="py-24 px-6" style={{ backgroundColor: C.bgSection }}>
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-12 gap-12 items-center">
             <div className="col-span-5">
-              <p className="label mb-4" style={{ color: "#3a3a3a" }}>The problem</p>
+              <p className="label mb-4" style={{ color: C.textDim }}>The problem</p>
               <h2
                 className="font-black leading-tight mb-6"
-                style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em", color: "#f0ece4" }}
+                style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em", color: C.text }}
               >
                 The infrastructure for agents to{" "}
                 <span style={{ color: "#d97706" }}>spend money</span>
@@ -547,7 +567,7 @@ export default function LandingPage() {
                 <span style={{ color: "#d97706" }}>environmental cost</span>
                 {" "}does not.
               </h2>
-              <p className="text-sm leading-relaxed" style={{ color: "#525252" }}>
+              <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
                 Stripe, Google, and Coinbase have built the payment rails for autonomous agents.
                 161 million machine-to-machine transactions have already happened. $15 trillion
                 in B2B spend is projected to flow through agent marketplaces by 2028.
@@ -582,10 +602,10 @@ export default function LandingPage() {
                 <div
                   key={item.company}
                   className="flex items-center gap-4 rounded-xl p-4"
-                  style={{ backgroundColor: "#0d0d0d", border: "1px solid #1a1a1a" }}
+                  style={{ backgroundColor: C.bgCard, border: `1px solid ${C.border}` }}
                 >
                   <div className="w-28 shrink-0">
-                    <span className="text-xs font-semibold" style={{ color: "#a1a1a1" }}>{item.company}</span>
+                    <span className="text-xs font-semibold" style={{ color: C.textSub }}>{item.company}</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1.5">
@@ -595,11 +615,11 @@ export default function LandingPage() {
                       >
                         +{item.pct}%
                       </span>
-                      <span className="text-xs" style={{ color: "#525252" }}>{item.label}</span>
+                      <span className="text-xs" style={{ color: C.textMuted }}>{item.label}</span>
                     </div>
                     <div
                       className="h-1.5 rounded-full overflow-hidden"
-                      style={{ backgroundColor: "#1a1a1a" }}
+                      style={{ backgroundColor: C.border }}
                     >
                       <div
                         className="h-full rounded-full"
@@ -610,13 +630,13 @@ export default function LandingPage() {
                         }}
                       />
                     </div>
-                    <p className="text-[10px] mt-1.5" style={{ color: "#3a3a3a", fontFamily: "var(--font-mono)" }}>
+                    <p className="text-[10px] mt-1.5" style={{ color: C.textDim, fontFamily: "var(--font-mono)" }}>
                       {item.detail}
                     </p>
                   </div>
                 </div>
               ))}
-              <p className="text-xs pt-1" style={{ color: "#2a2a2a", fontFamily: "var(--font-mono)" }}>
+              <p className="text-xs pt-1" style={{ color: C.textDim2, fontFamily: "var(--font-mono)" }}>
                 Source: Published sustainability reports 2024–2025
               </p>
             </div>
@@ -627,10 +647,10 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           FEATURES — numbered editorial list
       ══════════════════════════════════════════════════════ */}
-      <section id="features" className="py-24 px-6" style={{ borderTop: "1px solid #111" }}>
+      <section id="features" className="py-24 px-6" style={{ borderTop: `1px solid ${C.rule}` }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-14">
-            <p className="label mb-3" style={{ color: "#3a3a3a" }}>The solution</p>
+            <p className="label mb-3" style={{ color: C.textDim }}>The solution</p>
             <h2
               className="font-black"
               style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em" }}
@@ -638,7 +658,7 @@ export default function LandingPage() {
               One SDK.{" "}
               <span style={{ color: "#22c55e" }}>Five primitives.</span>
               <br />
-              <span style={{ color: "#3a3a3a" }}>Everything carbon, handled underneath.</span>
+              <span style={{ color: C.textDim }}>Everything carbon, handled underneath.</span>
             </h2>
           </div>
 
@@ -648,13 +668,13 @@ export default function LandingPage() {
                 key={f.num}
                 href={f.href}
                 className="group flex items-start gap-8 py-7 transition-colors duration-150"
-                style={{ borderTop: "1px solid #111" }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.01)")}
+                style={{ borderTop: `1px solid ${C.rule}` }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.backgroundColor = dk ? "rgba(255,255,255,0.01)" : "rgba(0,0,0,0.02)")}
                 onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = "transparent")}
               >
                 <span
                   className="font-condensed shrink-0 mt-0.5"
-                  style={{ fontSize: "2.5rem", color: "#1e1e1e", lineHeight: 1, letterSpacing: "-0.02em" }}
+                  style={{ fontSize: "2.5rem", color: C.borderB, lineHeight: 1, letterSpacing: "-0.02em" }}
                 >
                   {f.num}
                 </span>
@@ -665,18 +685,18 @@ export default function LandingPage() {
                       className="font-bold mb-2 transition-colors duration-150"
                       style={{
                         fontSize: "1.1rem",
-                        color: "#f0ece4",
+                        color: C.text,
                         letterSpacing: "-0.02em",
                       }}
                     >
                       {f.name}
                     </h3>
-                    <p className="text-sm leading-relaxed" style={{ color: "#525252" }}>
+                    <p className="text-sm leading-relaxed" style={{ color: C.textMuted }}>
                       {f.description}
                     </p>
                   </div>
                   <div className="flex items-start">
-                    <p className="text-xs leading-relaxed" style={{ color: "#2e2e2e", fontFamily: "var(--font-mono)" }}>
+                    <p className="text-xs leading-relaxed" style={{ color: C.textDim, fontFamily: "var(--font-mono)" }}>
                       {f.detail}
                     </p>
                   </div>
@@ -688,7 +708,7 @@ export default function LandingPage() {
                 />
               </Link>
             ))}
-            <div style={{ borderTop: "1px solid #111" }} />
+            <div style={{ borderTop: `1px solid ${C.rule}` }} />
           </div>
         </div>
       </section>
@@ -696,18 +716,18 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           THE STAKES — interactive carbon pathways chart
       ══════════════════════════════════════════════════════ */}
-      <section className="py-24 px-6" style={{ backgroundColor: "#060808", borderTop: "1px solid #111" }}>
+      <section className="py-24 px-6" style={{ backgroundColor: C.bgSection, borderTop: `1px solid ${C.rule}` }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-12">
-            <p className="label mb-3" style={{ color: "#3a3a3a" }}>The stakes</p>
+            <p className="label mb-3" style={{ color: C.textDim }}>The stakes</p>
             <h2
               className="font-black"
               style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em" }}
             >
               The path we take
-              <span style={{ color: "#3a3a3a" }}> depends on removal.</span>
+              <span style={{ color: C.textDim }}> depends on removal.</span>
             </h2>
-            <p className="text-sm mt-4" style={{ color: "#525252", maxWidth: "36rem" }}>
+            <p className="text-sm mt-4" style={{ color: C.textMuted, maxWidth: "36rem" }}>
               Every tonne of CO₂ that doesn&apos;t get removed is a debt on the 1.5°C budget.
               GreenLedger routes every AI inference levy directly to verified carbon removal via Stripe Climate.
             </p>
@@ -719,16 +739,16 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           HOW IT WORKS — visual workflow
       ══════════════════════════════════════════════════════ */}
-      <section id="how-it-works" className="py-24 px-6" style={{ borderTop: "1px solid #111" }}>
+      <section id="how-it-works" className="py-24 px-6" style={{ borderTop: `1px solid ${C.rule}` }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-14">
-            <p className="label mb-3" style={{ color: "#3a3a3a" }}>How it works</p>
+            <p className="label mb-3" style={{ color: C.textDim }}>How it works</p>
             <h2
               className="font-black"
               style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em" }}
             >
               Every inference.
-              <span style={{ color: "#3a3a3a" }}> Accounted for.</span>
+              <span style={{ color: C.textDim }}> Accounted for.</span>
             </h2>
           </div>
 
@@ -777,7 +797,7 @@ export default function LandingPage() {
                   style={{
                     padding: "1.5rem 1.25rem",
                     borderTop: `2px solid ${step.color}`,
-                    backgroundColor: "#0d0d0d",
+                    backgroundColor: C.bgCard,
                     display: "flex",
                     flexDirection: "column",
                     gap: "0.6rem",
@@ -790,17 +810,17 @@ export default function LandingPage() {
                   >
                     {step.num}
                   </span>
-                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#f0ece4", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: C.text, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
                     {step.title}
                   </p>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#3a3a3a", lineHeight: 1.6 }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: C.textDim, lineHeight: 1.6 }}>
                     {step.desc}
                   </p>
                 </div>
                 {i < 4 && (
                   <div key={`arrow-${i}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
                     <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
-                      <path d="M0 6H17M17 6L12 1M17 6L12 11" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M0 6H17M17 6L12 1M17 6L12 11" stroke={C.borderB} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                 )}
@@ -811,7 +831,7 @@ export default function LandingPage() {
           {/* ── Receipt preview strip ── */}
           <div
             style={{
-              backgroundColor: "#0a0f0a",
+              backgroundColor: C.bgCardAlt,
               border: "1px solid rgba(34,197,94,0.12)",
               borderRadius: "8px",
               padding: "1.25rem 1.5rem",
@@ -838,8 +858,8 @@ export default function LandingPage() {
                 { label: "Levy", value: "$0.000024 → Stripe Climate" },
               ].map((f) => (
                 <div key={f.label}>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "3px" }}>{f.label}</p>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: (f as any).green ? "#22c55e" : "#5a5a5a" }}>{f.value}</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: C.textDim2, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "3px" }}>{f.label}</p>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: (f as any).green ? "#22c55e" : C.textMuted }}>{f.value}</p>
                 </div>
               ))}
             </div>
@@ -850,19 +870,19 @@ export default function LandingPage() {
       {/* ══════════════════════════════════════════════════════
           MANIFESTO CTA
       ══════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6 relative overflow-hidden topo-bg" style={{ borderTop: "1px solid #111" }}>
+      <section className="py-32 px-6 relative overflow-hidden topo-bg" style={{ borderTop: `1px solid ${C.rule}` }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "radial-gradient(ellipse 50% 70% at 50% 50%, rgba(34,197,94,0.04), transparent 70%)",
         }} />
         <div className="relative max-w-4xl mx-auto text-center">
-          <p className="label mb-5" style={{ color: "#2a2a2a" }}>The bet</p>
+          <p className="label mb-5" style={{ color: C.textDim2 }}>The bet</p>
           <h2
             className="font-black leading-tight mb-6 text-balance"
             style={{ fontSize: "clamp(2.4rem, 5.5vw, 4.5rem)", letterSpacing: "-0.04em" }}
           >
             In 5 years, no serious company will deploy AI agents without carbon accountability.
           </h2>
-          <p className="text-lg mb-10" style={{ color: "#3a3a3a" }}>
+          <p className="text-lg mb-10" style={{ color: C.textDim }}>
             The same way no serious company deploys software without security today.
           </p>
           <div className="flex items-center justify-center gap-2 text-2xl font-black mb-10" style={{ color: "#22c55e", fontFamily: "var(--font-condensed)", letterSpacing: "0.05em" }}>
@@ -882,13 +902,13 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-5" style={{ borderTop: "1px solid #111" }}>
+      <footer className="px-6 py-5" style={{ borderTop: `1px solid ${C.rule}` }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Leaf className="w-3.5 h-3.5" style={{ color: "#22c55e" }} />
-            <span className="text-xs font-semibold" style={{ color: "#2a2a2a", fontFamily: "var(--font-display)" }}>GreenLedger</span>
+            <span className="text-xs font-semibold" style={{ color: C.textDim, fontFamily: "var(--font-display)" }}>GreenLedger</span>
           </div>
-          <p className="text-xs" style={{ color: "#2a2a2a", fontFamily: "var(--font-mono)" }}>
+          <p className="text-xs" style={{ color: C.textDim, fontFamily: "var(--font-mono)" }}>
             Carbon accountability for the agentic AI economy.
           </p>
         </div>
