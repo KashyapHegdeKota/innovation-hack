@@ -3,13 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 import os
+import sys
+
+# Ensure apps/api and the repo root are on sys.path so all imports resolve
+_api_dir  = os.path.dirname(os.path.abspath(__file__))
+_repo_root = os.path.dirname(os.path.dirname(_api_dir))
+for _p in [_api_dir, _repo_root]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 # Load .env from the api directory so Supabase creds are available
-_env_path = os.path.join(os.path.dirname(__file__), ".env")
+_env_path = os.path.join(_api_dir, ".env")
 load_dotenv(_env_path)
 
-from .auth import get_current_user
-from .database import get_supabase_client
+from auth import get_current_user
+from database import get_supabase_client
 
 app = FastAPI(
     title="GreenLedger API",
@@ -36,31 +44,31 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 # Person A: org & agent management
-from .routes import orgs  # noqa: E402
+from routes import orgs  # noqa: E402
 app.include_router(orgs.router, prefix="/v1", tags=["Organizations"])
 
 # Person A: green router + inference
-from .routes import infer  # noqa: E402
+from routes import infer  # noqa: E402
 app.include_router(infer.router, prefix="/v1", tags=["Inference & Routing"])
 
 # Dev B: model comparison
-from .routes import models  # noqa: E402
+from routes import models  # noqa: E402
 app.include_router(models.router, prefix="/v1", tags=["Models"])
 
 # Person B: carbon wallets
-from .routes import wallets  # noqa: E402
+from routes import wallets  # noqa: E402
 app.include_router(wallets.router, prefix="/v1", tags=["Carbon Wallets"])
 
 # Person B: payments with carbon levy
-from .routes import pay  # noqa: E402
+from routes import pay  # noqa: E402
 app.include_router(pay.router, prefix="/v1", tags=["Payments"])
 
 # Person C: receipts
-from .routes import receipts  # noqa: E402
+from routes import receipts  # noqa: E402
 app.include_router(receipts.router, prefix="/v1", tags=["Receipts"])
 
 # Person C: sustainability scores
-from .routes import scores  # noqa: E402
+from routes import scores  # noqa: E402
 app.include_router(scores.router, prefix="/v1", tags=["Scores"])
 
 

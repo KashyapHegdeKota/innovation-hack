@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from .database import get_supabase_client
+from database import get_supabase_client
 
 # ---------------------------------------------------------------------------
 # In-memory fallback (used only if Supabase is not configured)
