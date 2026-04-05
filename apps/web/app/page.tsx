@@ -108,40 +108,41 @@ const FEATURES = [
 
 /* ── Carbon pathways chart data ────────────────────────────────── */
 // Historical: Global Carbon Project. Scenarios: CICERO/IPCC SSP adaptations.
+// Every row has all keys — null where not applicable so Recharts renders cleanly
 const CARBON_DATA = [
-  { year: 1980, historical: 22.5 },
-  { year: 1985, historical: 23.8 },
-  { year: 1990, historical: 26.1 },
-  { year: 1995, historical: 27.4 },
-  { year: 2000, historical: 29.2 },
-  { year: 2005, historical: 32.8 },
-  { year: 2010, historical: 35.6 },
-  { year: 2015, historical: 38.2 },
-  { year: 2020, historical: 41.8, path15: 41.8, path20: 41.8, path30: 41.8 },
-  { year: 2025, path15: 36.0, path20: 39.5, path30: 43.2, removal15: -1.0, removal20: -0.4 },
-  { year: 2030, path15: 28.0, path20: 35.0, path30: 44.8, removal15: -2.5, removal20: -0.9 },
-  { year: 2035, path15: 19.0, path20: 29.5, path30: 45.5, removal15: -4.2, removal20: -1.6 },
-  { year: 2040, path15: 10.5, path20: 23.0, path30: 45.8, removal15: -5.8, removal20: -2.4 },
-  { year: 2045, path15: 3.5,  path20: 16.0, path30: 45.5, removal15: -7.0, removal20: -3.2 },
-  { year: 2050, path15: -1.5, path20: 9.0,  path30: 44.8, removal15: -8.0, removal20: -4.0 },
-  { year: 2055, path15: -4.5, path20: 3.5,  path30: 43.2, removal15: -8.8, removal20: -4.8 },
-  { year: 2060, path15: -6.5, path20: -1.0, path30: 41.5, removal15: -9.4, removal20: -5.5 },
-  { year: 2065, path15: -7.8, path20: -4.0, path30: 39.5, removal15: -9.8, removal20: -6.2 },
-  { year: 2070, path15: -8.8, path20: -6.5, path30: 37.5, removal15: -10.0, removal20: -6.8 },
-  { year: 2075, path15: -9.5, path20: -8.5, path30: 35.0, removal15: -10.2, removal20: -7.2 },
-  { year: 2080, path15: -10.0, path20: -9.8, path30: 32.0, removal15: -10.3, removal20: -7.5 },
-  { year: 2085, path15: -10.4, path20: -10.5, path30: 29.0, removal15: -10.3, removal20: -7.8 },
-  { year: 2090, path15: -10.6, path20: -10.8, path30: 26.0, removal15: -10.2, removal20: -8.0 },
-  { year: 2095, path15: -10.7, path20: -11.0, path30: 23.5, removal15: -10.1, removal20: -8.1 },
-  { year: 2100, path15: -10.8, path20: -11.2, path30: 21.5, removal15: -10.0, removal20: -8.2 },
+  { year: 1980, historical: 22.5, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 1985, historical: 23.8, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 1990, historical: 26.1, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 1995, historical: 27.4, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 2000, historical: 29.2, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 2005, historical: 32.8, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 2010, historical: 35.6, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 2015, historical: 38.2, path15: null, path20: null, path30: null, removal15: null, removal20: null },
+  { year: 2020, historical: 41.8, path15: 41.8, path20: 41.8, path30: 41.8, removal15: 0, removal20: 0 },
+  { year: 2025, historical: null, path15: 36.0, path20: 39.5, path30: 43.2, removal15: -1.0, removal20: -0.4 },
+  { year: 2030, historical: null, path15: 28.0, path20: 35.0, path30: 44.8, removal15: -2.5, removal20: -0.9 },
+  { year: 2035, historical: null, path15: 19.0, path20: 29.5, path30: 45.5, removal15: -4.2, removal20: -1.6 },
+  { year: 2040, historical: null, path15: 10.5, path20: 23.0, path30: 45.8, removal15: -5.8, removal20: -2.4 },
+  { year: 2045, historical: null, path15:  3.5, path20: 16.0, path30: 45.5, removal15: -7.0, removal20: -3.2 },
+  { year: 2050, historical: null, path15: -1.5, path20:  9.0, path30: 44.8, removal15: -8.0, removal20: -4.0 },
+  { year: 2055, historical: null, path15: -4.5, path20:  3.5, path30: 43.2, removal15: -8.8, removal20: -4.8 },
+  { year: 2060, historical: null, path15: -6.5, path20: -1.0, path30: 41.5, removal15: -9.4, removal20: -5.5 },
+  { year: 2065, historical: null, path15: -7.8, path20: -4.0, path30: 39.5, removal15: -9.8, removal20: -6.2 },
+  { year: 2070, historical: null, path15: -8.8, path20: -6.5, path30: 37.5, removal15:-10.0, removal20: -6.8 },
+  { year: 2075, historical: null, path15: -9.5, path20: -8.5, path30: 35.0, removal15:-10.2, removal20: -7.2 },
+  { year: 2080, historical: null, path15:-10.0, path20: -9.8, path30: 32.0, removal15:-10.3, removal20: -7.5 },
+  { year: 2085, historical: null, path15:-10.4, path20:-10.5, path30: 29.0, removal15:-10.3, removal20: -7.8 },
+  { year: 2090, historical: null, path15:-10.6, path20:-10.8, path30: 26.0, removal15:-10.2, removal20: -8.0 },
+  { year: 2095, historical: null, path15:-10.7, path20:-11.0, path30: 23.5, removal15:-10.1, removal20: -8.1 },
+  { year: 2100, historical: null, path15:-10.8, path20:-11.2, path30: 21.5, removal15:-10.0, removal20: -8.2 },
 ];
 
 type Scenario = "1.5" | "2" | "3";
 
-const SCENARIO_CONFIG: Record<Scenario, { label: string; pathKey: string; color: string; desc: string }> = {
-  "1.5": { label: "~1.5°C",       pathKey: "path15", color: "#3b82f6", desc: "Aggressive immediate cuts + large-scale carbon removal" },
-  "2":   { label: "~2°C",         pathKey: "path20", color: "#8b5cf6", desc: "Gradual reduction over 30 years, moderate removal" },
-  "3":   { label: "~3°C (Current path)", pathKey: "path30", color: "#9ca3af", desc: "Business as usual — catastrophic by end of century" },
+const SCENARIO_CONFIG: Record<Scenario, { label: string; pathKey: string; removalKey: string; color: string; desc: string }> = {
+  "1.5": { label: "~1.5°C",             pathKey: "path15", removalKey: "removal15", color: "#60a5fa", desc: "Aggressive immediate cuts + large-scale carbon removal" },
+  "2":   { label: "~2°C",               pathKey: "path20", removalKey: "removal20", color: "#a78bfa", desc: "Gradual reduction over 30 years, moderate removal" },
+  "3":   { label: "~3°C (Current path)",pathKey: "path30", removalKey: "",          color: "#6b7280", desc: "Business as usual — catastrophic by end of century" },
 };
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -206,11 +207,11 @@ function CarbonChart() {
       </div>
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem" }}>
+      <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
         {[
-          { color: "#f0ece4", dash: false, label: "Historical emissions" },
+          { color: "#e5e7eb", dash: false, label: "Historical emissions" },
           { color: cfg.color, dash: true,  label: `${cfg.label} path` },
-          { color: "#6366f1", dash: false, label: "Carbon removal" },
+          ...(scenario !== "3" ? [{ color: "#6366f1", dash: false, label: "Carbon removal" }] : []),
         ].map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <svg width="20" height="8">
@@ -228,58 +229,60 @@ function CarbonChart() {
       </div>
 
       {/* Chart */}
-      <ResponsiveContainer width="100%" height={360}>
-        <ComposedChart data={CARBON_DATA} margin={{ top: 10, right: 20, bottom: 20, left: 20 }}>
-          <CartesianGrid stroke="#1a1a1a" strokeDasharray="3 3" vertical={false} />
+      <ResponsiveContainer width="100%" height={380}>
+        <ComposedChart data={CARBON_DATA} margin={{ top: 10, right: 30, bottom: 30, left: 10 }}>
+          <CartesianGrid stroke="#222" strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="year"
-            tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "#525252" }}
-            axisLine={{ stroke: "#2a2a2a" }}
+            tick={{ fontFamily: "monospace", fontSize: 11, fill: "#6b7280" }}
+            axisLine={{ stroke: "#333" }}
             tickLine={false}
-            label={{ value: "YEAR", position: "insideBottom", offset: -10, style: { fontFamily: "var(--font-mono)", fontSize: 9, fill: "#3a3a3a", letterSpacing: "0.12em" } }}
+            label={{ value: "YEAR", position: "insideBottom", offset: -12, style: { fontFamily: "monospace", fontSize: 10, fill: "#4b5563", letterSpacing: "0.12em" } }}
           />
           <YAxis
-            tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "#525252" }}
+            tick={{ fontFamily: "monospace", fontSize: 11, fill: "#6b7280" }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={v => `${v}`}
-            label={{ value: "NET CO₂ (GtCO₂/YR)", angle: -90, position: "insideLeft", offset: -8, style: { fontFamily: "var(--font-mono)", fontSize: 9, fill: "#3a3a3a", letterSpacing: "0.08em" } }}
             domain={[-20, 55]}
+            tickCount={8}
+            label={{ value: "NET CO₂ (GtCO₂/YR)", angle: -90, position: "insideLeft", offset: 15, style: { fontFamily: "monospace", fontSize: 9, fill: "#4b5563", letterSpacing: "0.06em" } }}
           />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={0} stroke="#2a2a2a" strokeWidth={1} />
-          <ReferenceLine x={2020} stroke="#3a3a3a" strokeWidth={1} strokeDasharray="4 3" />
+          <ReferenceLine y={0} stroke="#444" strokeWidth={1.5} />
+          <ReferenceLine x={2020} stroke="#444" strokeWidth={1} strokeDasharray="5 4" label={{ value: "2020", position: "top", style: { fontFamily: "monospace", fontSize: 10, fill: "#6b7280" } }} />
 
-          {/* Carbon removal area */}
-          {scenario !== "3" && (
+          {/* Carbon removal shaded area (below zero) */}
+          {scenario !== "3" && cfg.removalKey && (
             <Area
-              dataKey={scenario === "1.5" ? "removal15" : "removal20"}
+              dataKey={cfg.removalKey}
               name="Carbon removal"
-              fill="rgba(99,102,241,0.12)"
-              stroke="none"
+              fill="rgba(99,102,241,0.18)"
+              stroke="#6366f1"
+              strokeWidth={1.5}
               connectNulls
               isAnimationActive
+              dot={false}
             />
           )}
 
-          {/* Historical solid line */}
+          {/* Historical solid line — bright white */}
           <Line
             dataKey="historical"
-            name="Historical"
-            stroke="#f0ece4"
-            strokeWidth={2}
+            name="Historical emissions"
+            stroke="#e5e7eb"
+            strokeWidth={3}
             dot={false}
             connectNulls
             isAnimationActive
           />
 
-          {/* Scenario path dashed */}
+          {/* Scenario path — colored dashed */}
           <Line
             dataKey={cfg.pathKey}
             name={cfg.label}
             stroke={cfg.color}
-            strokeWidth={2}
-            strokeDasharray="6 4"
+            strokeWidth={2.5}
+            strokeDasharray="7 4"
             dot={false}
             connectNulls
             isAnimationActive
