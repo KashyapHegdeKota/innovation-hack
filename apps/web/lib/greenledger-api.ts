@@ -57,6 +57,29 @@ export interface EnvironmentalCost {
   energy_wh: number;
 }
 
+export interface ReceiptSavings {
+  original_model: string | null;
+  original_api_cost_usd: number;
+  routed_api_cost_usd: number;
+  savings_usd: number;
+  levy_from_savings_usd: number;
+  co2e_avoided_g: number;
+}
+
+export interface LevySummary {
+  total_queries: number;
+  total_savings_usd: number;
+  total_levy_usd: number;
+  total_co2e_avoided_g: number;
+  levy_breakdown: {
+    model: string;
+    original_model: string;
+    savings_usd: number;
+    levy_usd: number;
+    co2e_avoided_g: number;
+  }[];
+}
+
 export interface ReceiptResponse {
   id: string;
   org_id: string;
@@ -260,3 +283,8 @@ export const getRecommendations = () =>
 
 export const getDashboardSummary = () =>
   apiClient.get<DashboardSummary>(`${API_V1}/scores/dashboard`);
+
+// --- Levy Summary (real-time accumulated savings) ---
+
+export const getLevySummary = () =>
+  apiClient.get<LevySummary>(`${API_V1}/levy-summary`);

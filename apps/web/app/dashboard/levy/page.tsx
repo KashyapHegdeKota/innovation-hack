@@ -1,6 +1,6 @@
 "use client";
 
-import { Leaf, DollarSign, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Leaf, DollarSign, CheckCircle, Clock, AlertCircle, ArrowRight, PiggyBank, TrendingDown } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -12,9 +12,11 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
 } from "recharts";
 import StatCard from "@/components/StatCard";
-import { levySummary, levyOverTime, levyTransactions } from "@/lib/mock-data";
+import { levySummary, levyOverTime, levyTransactions, savingsSummary } from "@/lib/mock-data";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   confirmed: { label: "Confirmed", color: "var(--green-accent)", icon: CheckCircle },
@@ -49,9 +51,87 @@ export default function LevyPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4">
         <StatCard label="Total Levy" value={`$${levySummary.total_levy_usd.toFixed(2)}`} icon={DollarSign} />
-        <StatCard label="Carbon Removed" value={levySummary.total_carbon_removed_g.toFixed(1)} unit="g" icon={Leaf} />
-        <StatCard label="Transactions" value={levySummary.total_transactions.toLocaleString()} icon={CheckCircle} />
+        <StatCard label="API Cost Saved" value={`$${savingsSummary.total_savings_usd.toFixed(2)}`} icon={PiggyBank} trend={18.5} />
+        <StatCard label="CO2e Avoided" value={savingsSummary.co2e_avoided_g.toFixed(1)} unit="g" icon={TrendingDown} trend={22.1} />
         <StatCard label="Confirmed" value={`${levySummary.confirmed_pct}%`} icon={CheckCircle} trend={3.2} />
+      </div>
+
+      {/* How the Levy Works — flow diagram */}
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
+      >
+        <h3 className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: "var(--text-muted)" }}>
+          How the Carbon Levy Works
+        </h3>
+        <div className="flex items-center justify-between gap-3">
+          {[
+            { label: "User Selects", value: "Opus 4.6", sub: "$0.075/query", color: "var(--text-secondary)" },
+            { label: "Router Picks", value: "Haiku 4.5", sub: "$0.002/query", color: "var(--green-accent)" },
+            { label: "You Save", value: "$0.073", sub: "per query", color: "var(--green-accent)" },
+            { label: "20% Levy", value: "$0.0146", sub: "to carbon removal", color: "var(--amber-accent)" },
+            { label: "Stripe Climate", value: "Carbon Removed", sub: "Frontier portfolio", color: "var(--green-accent)" },
+          ].map((step, i, arr) => (
+            <div key={step.label} className="flex items-center gap-3">
+              <div
+                className="rounded-lg border p-3 text-center min-w-[120px]"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-secondary)" }}
+              >
+                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>{step.label}</p>
+                <p className="text-sm font-bold font-mono" style={{ color: step.color }}>{step.value}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{step.sub}</p>
+              </div>
+              {i < arr.length - 1 && (
+                <ArrowRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top Savings Routes */}
+      <div
+        className="rounded-xl border p-5"
+        style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
+      >
+        <h3 className="text-xs font-medium uppercase tracking-wider mb-4" style={{ color: "var(--text-muted)" }}>
+          Top Model Downgrades by Savings
+        </h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={savingsSummary.top_savings_routes} layout="vertical" margin={{ left: 180 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+            <XAxis
+              type="number"
+              tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+              axisLine={{ stroke: "var(--border)" }}
+              tickLine={false}
+              tickFormatter={(v) => `$${v.toFixed(2)}`}
+            />
+            <YAxis
+              type="category"
+              dataKey="from"
+              tick={{ fill: "var(--text-secondary)", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              width={170}
+              tickFormatter={(v: string, i: number) => {
+                const route = savingsSummary.top_savings_routes[i];
+                return route ? `${v} → ${route.to}` : v;
+              }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border-bright)",
+                borderRadius: "8px",
+                color: "var(--text-primary)",
+                fontSize: "12px",
+              }}
+              formatter={(value: number) => [`$${value.toFixed(3)}`, "Savings"]}
+            />
+            <Bar dataKey="savings_usd" radius={[0, 4, 4, 0]} fill="#22c55e" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Charts */}

@@ -14,17 +14,21 @@ from ..services.providers import execute_inference, ProviderError
 from ..services.keystore import KeyStore
 from ..store import add_receipt, deduct_wallet
 from cli.models.registry import MODELS, get_model
-from cli.utils.carbon import estimate_query_cost
+from cli.utils.carbon import estimate_query_cost, estimate_routing_savings, estimate_api_cost
 import json
 import uuid
 import httpx
 from datetime import datetime, timezone
+from collections import defaultdict
 
 router = APIRouter()
 
 # Global keystore instance — initialized at startup with ENCRYPTION_KEY env var
 import os
 _keystore = KeyStore(os.environ.get("ENCRYPTION_KEY", "default-dev-key-change-in-prod!!"))
+
+# In-memory levy ledger — accumulates savings across queries (demo mode)
+_levy_ledger: dict[str, list[dict]] = defaultdict(list)
 
 
 def get_user_key(user_id: str, provider: str) -> str | None:
@@ -43,6 +47,21 @@ class ReceiptData(BaseModel):
     energy_wh: float
     water_ml: float
     levy_usd: float
+    # Savings fields (populated when router downgrades model)
+    original_model: str | None = None
+    original_api_cost_usd: float = 0.0
+    routed_api_cost_usd: float = 0.0
+    savings_usd: float = 0.0
+    levy_from_savings_usd: float = 0.0
+    co2e_avoided_g: float = 0.0
+
+
+class LevySummaryResponse(BaseModel):
+    total_queries: int
+    total_savings_usd: float
+    total_levy_usd: float
+    total_co2e_avoided_g: float
+    levy_breakdown: list[dict]
 
 
 class InferResponseBody(BaseModel):
@@ -88,14 +107,31 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
     # 4. Generate receipt from actual token counts
     cost = estimate_query_cost(body.model, result.tokens_in, result.tokens_out)
 
+    # 5. Calculate savings if router downgraded the model
+    original_model_id = body.model   # what the user asked for
+    routed_model_id = result.model   # what actually ran (may differ after routing)
+
+    savings_data = estimate_routing_savings(
+        original_model_id=original_model_id,
+        routed_model_id=routed_model_id,
+        tokens_in=result.tokens_in,
+        tokens_out=result.tokens_out,
+    )
+
     receipt = ReceiptData(
         co2e_g=cost.co2e_g,
         energy_wh=cost.energy_wh,
         water_ml=cost.water_ml,
-        levy_usd=cost.levy_usd,
+        levy_usd=savings_data.total_levy_usd,
+        original_model=original_model_id if original_model_id != routed_model_id else None,
+        original_api_cost_usd=savings_data.original_api_cost_usd,
+        routed_api_cost_usd=savings_data.routed_api_cost_usd,
+        savings_usd=savings_data.savings_usd,
+        levy_from_savings_usd=savings_data.levy_from_savings_usd,
+        co2e_avoided_g=savings_data.co2e_avoided_g,
     )
 
-    # Persist to in-memory store
+    # 6. Persist to in-memory store
     receipt_id = str(uuid.uuid4())
     agent_id = user_id
     naive_co2e = cost.co2e_g * 4  # naive = heavy model estimate
@@ -116,7 +152,7 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
             "water_ml": cost.water_ml,
         },
         "offset": {
-            "levy_usd": cost.levy_usd,
+            "levy_usd": savings_data.total_levy_usd,
             "destination": "stripe_climate_frontier",
             "status": "confirmed",
         },
@@ -124,8 +160,25 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
             "naive_co2e_g": naive_co2e,
             "savings_pct": savings_pct,
         },
+        "savings": {
+            "original_model": original_model_id,
+            "original_api_cost_usd": savings_data.original_api_cost_usd,
+            "routed_api_cost_usd": savings_data.routed_api_cost_usd,
+            "savings_usd": savings_data.savings_usd,
+            "levy_from_savings_usd": savings_data.levy_from_savings_usd,
+            "co2e_avoided_g": savings_data.co2e_avoided_g,
+        },
     })
     deduct_wallet(agent_id, cost.co2e_g, receipt_id)
+
+    # 7. Record to levy ledger
+    _levy_ledger[user_id].append({
+        "model": routed_model_id,
+        "original_model": original_model_id,
+        "savings_usd": savings_data.savings_usd,
+        "levy_usd": savings_data.total_levy_usd,
+        "co2e_avoided_g": savings_data.co2e_avoided_g,
+    })
 
     return InferResponseBody(
         text=result.text,
@@ -135,6 +188,21 @@ async def infer(body: InferRequestBody, current_user=Depends(get_current_user)):
         tokens_out=result.tokens_out,
         latency_ms=result.latency_ms,
         receipt=receipt,
+    )
+
+
+@router.get("/levy-summary", response_model=LevySummaryResponse)
+async def levy_summary(current_user=Depends(get_current_user)):
+    """Return accumulated levy data for the current user's session."""
+    user_id = current_user["uid"]
+    entries = _levy_ledger.get(user_id, [])
+
+    return LevySummaryResponse(
+        total_queries=len(entries),
+        total_savings_usd=sum(e["savings_usd"] for e in entries),
+        total_levy_usd=sum(e["levy_usd"] for e in entries),
+        total_co2e_avoided_g=sum(e["co2e_avoided_g"] for e in entries),
+        levy_breakdown=entries,
     )
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
 
