@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Syne, JetBrains_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "../context/AuthContext";
+import { UserProvider } from "@auth0/nextjs-auth0/client";
 import { ThemeProvider } from "../context/ThemeContext";
 
 const syne = Syne({
@@ -40,9 +40,9 @@ export default function RootLayout({
       </head>
       <body className={`${syne.variable} ${jetbrainsMono.variable} ${bebasNeue.variable}`}>
         <ThemeProvider>
-          <AuthProvider>
+          <UserProvider>
             {children}
-          </AuthProvider>
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>
