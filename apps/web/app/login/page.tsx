@@ -1,12 +1,12 @@
 "use client";
 
-import { useAuth } from "../../context/AuthContext";
+import { useUser } from "@auth0/nextjs-auth0/client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { LogIn } from "lucide-react";
 
 export default function LoginPage() {
-  const { user, loginWithGoogle } = useAuth();
+  const { user } = useUser();
   const router = useRouter();
 
   useEffect(() => {
@@ -23,13 +23,10 @@ export default function LoginPage() {
           Next.js + FastAPI + Supabase + Firebase Auth
         </p>
         
-        <button
-          onClick={loginWithGoogle}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-        >
+        <a href="/api/auth/login" className="flex items-center gap-2 px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors">
           <LogIn size={20} />
           Sign in with Google
-        </button>
+        </a>
       </div>
     </main>
   );

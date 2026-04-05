@@ -40,6 +40,14 @@ ROUTER_URL   = os.environ.get("ROUTER_URL",   "https://api.kashyaphegde.com/gree
 INFER_URL    = os.environ.get("INFER_URL",    "https://api.kashyaphegde.com/greenledger/v1/infer")
 RECEIPTS_URL = os.environ.get("RECEIPTS_URL", "https://api.kashyaphegde.com/greenledger/v1/receipts")
 
+# --- AUTHENTICATION HEADERS ---
+# Load the config once at startup to grab the Auth0 token
+_local_cfg = load_config()
+AUTH_TOKEN = _local_cfg.get("auth_token", "")
+
+# If the user is logged in, attach the Bearer token. Otherwise, send empty headers.
+API_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"} if AUTH_TOKEN else {}
+
 # ── Model registry ───────────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
@@ -154,6 +162,7 @@ async def check_router(user_prompt: str, model_id: str) -> dict:
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 _active_router_url,
+                headers = API_HEADERS,
                 json={"user_prompt": user_prompt, "selected_model": model_id},
             )
             resp.raise_for_status()
@@ -172,6 +181,7 @@ async def call_infer(prompt: str, model_id: str, max_tokens: int = 1024) -> Opti
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 INFER_URL,
+                headers=API_HEADERS,
                 json={"prompt": prompt, "model": model_id, "max_tokens": max_tokens},
             )
             if resp.status_code == 401:
@@ -202,7 +212,7 @@ async def push_receipt(
     savings_pct = round((1 - receipt.get("co2e_g", 0) / naive_co2e) * 100) if naive_co2e > 0 else 0
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            await client.post(RECEIPTS_URL, json={
+            await client.post(RECEIPTS_URL, headers=API_HEADERS, json={
                 "agent_id": "cli-user",
                 "model": model_id,
                 "provider": provider,
