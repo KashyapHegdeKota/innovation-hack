@@ -1,14 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Bot, TrendingUp, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import { Users, Search } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { getAgentScores, getDashboardSummary, listReceipts } from "@/lib/greenledger-api";
-import { DUMMY_AGENTS } from "@/lib/dummy-agents";
-import { topClients as mockClients, platformStats as mockStats } from "@/lib/admin-mock-data";
+import { getAgentScores, listReceipts } from "@/lib/greenledger-api";
 
+/* ── animation variants ───────────────────────────────────────── */
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+const item = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.25, 0.1, 0.25, 1] as const } },
+};
+
+/* ── tiny section label ───────────────────────────────────────── */
+function Sec({ children }: { children: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: "9px", fontWeight: 700,
+        letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)",
+        whiteSpace: "nowrap",
+      }}>
+        {children}
+      </span>
+      <div style={{ flex: 1, height: "1px", backgroundColor: "var(--rule, #1e1e1e)" }} />
+    </div>
+  );
+}
+
+/* ── main page ────────────────────────────────────────────────── */
 export default function AdminClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [totalClients, setTotalClients] = useState(0);
@@ -70,18 +96,6 @@ export default function AdminClientsPage() {
           clientMap[uid].total_energy_wh += r.environmental_cost?.energy_wh ?? 0;
         });
 
-        // Add dummy agents as demo clients
-        DUMMY_AGENTS.forEach(a => {
-          clientMap[a.agent_id] = {
-            user_id: a.agent_id,
-            total_inferences: a.total_inferences,
-            total_co2e_g: a.total_co2e_g,
-            total_energy_wh: a.total_energy_wh,
-            sustainability_score: a.sustainability_score,
-            trend: a.trend,
-          };
-        });
-
         const allClients = Object.values(clientMap)
           .sort((a, b) => b.sustainability_score - a.sustainability_score);
 
@@ -90,17 +104,9 @@ export default function AdminClientsPage() {
         const scores = allClients.map(c => c.sustainability_score);
         setAvgScore(scores.length > 0 ? Math.round(scores.reduce((s, v) => s + v, 0) / scores.length) : 0);
       } catch {
-        const fallback = mockClients.map(c => ({
-          user_id: c.user_id,
-          total_inferences: c.inferences,
-          total_co2e_g: c.co2e_g,
-          total_energy_wh: 0,
-          sustainability_score: c.score,
-          trend: "on_track",
-        }));
-        setClients(fallback);
-        setTotalClients(fallback.length);
-        setAvgScore(mockStats.avg_sustainability_score);
+        setClients([]);
+        setTotalClients(0);
+        setAvgScore(0);
       }
     }
     load();
@@ -111,119 +117,284 @@ export default function AdminClientsPage() {
   );
 
   const chartData = clients.slice(0, 8).map(c => ({
-    name: c.user_id.length > 14 ? c.user_id.slice(0, 14) + "…" : c.user_id,
+    name: c.user_id.length > 14 ? c.user_id.slice(0, 14) + "\u2026" : c.user_id,
     queries: c.total_inferences || 0,
     co2e_g: Number(c.total_co2e_g || 0).toFixed(2),
   }));
 
-  return (
-    <div className="max-w-[1200px] mx-auto space-y-8">
-      <div className="fade-up">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <Users className="w-5 h-5" style={{ color: "var(--blue-accent)" }} />
-              <h1 className="text-xl font-black" style={{ letterSpacing: "-0.03em" }}>Clients</h1>
-            </div>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{totalClients} unique clients (by user ID)</p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: live ? "#22c55e" : "#525252", boxShadow: live ? "0 0 6px #22c55e" : "none", animation: "pulse-green 2s ease-in-out infinite" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: live ? "#22c55e" : "var(--text-muted)" }}>
-              {live ? "Live" : "Mock"}
-            </span>
-          </div>
-        </div>
-      </div>
+  const heroMetrics = [
+    { label: "Total Clients", value: String(totalClients), accent: false },
+    { label: "Avg Sustainability", value: String(avgScore), accent: true },
+    { label: "Total Queries", value: clients.reduce((s, c) => s + (c.total_inferences || 0), 0).toLocaleString(), accent: false },
+  ];
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card p-5 fade-up-1">
-          <span className="label">Total Clients</span>
-          <p className="text-3xl font-black mt-2" style={{ color: "var(--text-primary)" }}>{totalClients}</p>
-        </div>
-        <div className="card p-5 fade-up-2">
-          <span className="label">Avg Sustainability Score</span>
-          <p className="text-3xl font-black mt-2" style={{ color: "var(--green-accent)" }}>{avgScore}</p>
-        </div>
-        <div className="card p-5 fade-up-3">
-          <span className="label">Total Queries</span>
-          <p className="text-3xl font-black mt-2" style={{ color: "var(--text-primary)" }}>
-            {clients.reduce((s, c) => s + (c.total_inferences || 0), 0).toLocaleString()}
+  return (
+    <motion.div variants={container} initial="hidden" animate="show" style={{ maxWidth: 1200, margin: "0 auto" }}>
+
+      {/* ── Page header ─────────────────────────────────────────── */}
+      <motion.div variants={item} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "2.5rem" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "6px" }}>
+            <Users style={{ width: 20, height: 20, color: "var(--blue-accent)" }} />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "1.8rem",
+                fontWeight: 900,
+                letterSpacing: "-0.04em",
+                color: "var(--text-primary)",
+                lineHeight: 1,
+                textTransform: "uppercase",
+              }}
+            >
+              Clients
+            </h1>
+          </div>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", letterSpacing: "0.04em" }}>
+            {totalClients} unique clients (by user ID)
           </p>
         </div>
-      </div>
 
-      <div className="card p-5 fade-up-2">
-        <span className="label">Client Comparison — Queries &amp; CO₂e (g)</span>
-        <div className="mt-4" style={{ height: 240 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text-primary)" }} />
-              <Bar dataKey="queries" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Queries" />
-              <Bar dataKey="co2e_g" fill="#22c55e" radius={[4, 4, 0, 0]} name="CO₂e (g)" />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* Live badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingTop: "4px" }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%", display: "inline-block", flexShrink: 0,
+            backgroundColor: live ? "#22c55e" : "#525252",
+            boxShadow: live ? "0 0 6px #22c55e" : "none",
+            animation: "pulse-green 2s ease-in-out infinite",
+          }} />
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase" as const, color: live ? "#22c55e" : "var(--text-muted)" }}>
+            {live ? "Live" : "Mock"}
+          </span>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="card p-5 fade-up-3">
-        <div className="flex items-center justify-between mb-4">
-          <span className="label">All Clients</span>
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
-            <input type="text" placeholder="Search by user ID..." value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-1.5 rounded-lg text-xs outline-none" style={{
-                backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)",
-                fontFamily: "var(--font-display)", width: 220,
-              }} />
+      {/* ── Hero metrics row ─────────────────────────────────────── */}
+      <motion.div variants={item} style={{ marginBottom: "2.5rem" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          borderTop: "1px solid var(--rule, #1e1e1e)",
+          borderBottom: "1px solid var(--rule, #1e1e1e)",
+        }}>
+          {heroMetrics.map((m, i) => (
+            <div
+              key={m.label}
+              style={{
+                borderLeft: i > 0 ? "1px solid var(--rule, #1e1e1e)" : "none",
+                padding: "1.5rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "clamp(1.2rem, 2vw, 1.8rem)",
+                fontWeight: 700,
+                color: m.accent ? "#22c55e" : "var(--text-primary)",
+                letterSpacing: "-0.04em",
+                lineHeight: 1,
+              }}>
+                {m.value}
+              </span>
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "9px",
+                color: "var(--text-muted)",
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+              }}>
+                {m.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ── Client Comparison Chart ──────────────────────────────── */}
+      <motion.div variants={item} style={{ borderTop: "1px solid var(--rule, #1e1e1e)", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+        <Sec>Client Comparison</Sec>
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            position: "relative",
+            backgroundColor: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            padding: "1.25rem",
+          }}
+        >
+          {/* Gradient accent line */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "1px",
+              background: "linear-gradient(90deg, transparent, rgba(96,165,250,0.3), transparent)",
+            }}
+          />
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "9px",
+            color: "var(--text-muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+          }}>
+            Queries &amp; CO&#x2082;e (g)
+          </span>
+          <div style={{ height: 240, marginTop: "0.75rem" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: "var(--text-muted)", fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, color: "var(--text-primary)" }} />
+                <Bar dataKey="queries" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Queries" />
+                <Bar dataKey="co2e_g" fill="#22c55e" radius={[4, 4, 0, 0]} name="CO&#x2082;e (g)" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
-        <table className="w-full">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
-              {["#", "User ID", "Queries", "CO₂e", "Energy", "Score", "Trend"].map(h => (
-                <th key={h} className="pb-2 text-left text-[10px] font-mono uppercase" style={{ color: "var(--text-muted)", letterSpacing: "0.08em" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((c, i) => (
-              <tr key={c.user_id} className="transition-colors"
-                style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : undefined }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--hover-bg)")}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
-                <td className="py-2.5 text-xs font-mono" style={{ color: "var(--text-muted)" }}>{i + 1}</td>
-                <td className="py-2.5">
-                  <span className="text-xs font-mono" style={{ color: "var(--text-primary)" }}>{c.user_id}</span>
-                </td>
-                <td className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>{(c.total_inferences || 0).toLocaleString()}</td>
-                <td className="text-xs font-mono" style={{ color: "var(--green-accent)" }}>{Number(c.total_co2e_g || 0).toFixed(3)}g</td>
-                <td className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>{Number(c.total_energy_wh || 0).toFixed(2)} Wh</td>
-                <td>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-12 h-1.5 rounded-full" style={{ backgroundColor: "var(--track-bg)" }}>
-                      <div className="h-full rounded-full" style={{
-                        width: `${c.sustainability_score || 0}%`,
-                        backgroundColor: (c.sustainability_score || 0) >= 80 ? "#22c55e" : (c.sustainability_score || 0) >= 50 ? "#f59e0b" : "#ef4444",
-                      }} />
-                    </div>
-                    <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>{c.sustainability_score || 0}</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{
-                    backgroundColor: c.trend === "on_track" ? "rgba(34,197,94,0.1)" : c.trend === "at_risk" ? "rgba(245,158,11,0.1)" : "rgba(248,113,113,0.1)",
-                    color: c.trend === "on_track" ? "var(--green-accent)" : c.trend === "at_risk" ? "var(--amber-accent)" : "var(--red-accent)",
-                  }}>{c.trend || "—"}</span>
-                </td>
+      </motion.div>
+
+      {/* ── All Clients Table ────────────────────────────────────── */}
+      <motion.div variants={item} style={{ borderTop: "1px solid var(--rule, #1e1e1e)", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+        <Sec>All Clients</Sec>
+
+        {/* Search */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+          <div style={{ position: "relative" }}>
+            <Search style={{ width: 14, height: 14, position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+            <input
+              type="text"
+              placeholder="Search by user ID..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                paddingLeft: 36,
+                paddingRight: 16,
+                paddingTop: 6,
+                paddingBottom: 6,
+                borderRadius: 8,
+                fontSize: 12,
+                outline: "none",
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-display)",
+                width: 220,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ backgroundColor: "var(--bg-card)", borderBottom: "1px solid var(--border)" }}>
+                {["#", "User ID", "Queries", "CO\u2082e", "Energy", "Score", "Trend"].map(h => (
+                  <th
+                    key={h}
+                    className="label"
+                    style={{
+                      padding: "0.625rem 1rem",
+                      textAlign: "left",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      padding: "3rem 1rem",
+                      textAlign: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      color: "var(--text-muted)",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    No clients found. Data will appear once agents begin sending inferences.
+                  </td>
+                </tr>
+              )}
+              {filtered.map((c, i) => (
+                <motion.tr
+                  key={c.user_id}
+                  variants={item}
+                  style={{
+                    borderBottom: i < filtered.length - 1 ? "1px solid var(--border)" : undefined,
+                    transition: "background-color 150ms",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--hover-bg)")}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <td style={{ padding: "0.625rem 1rem", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)" }}>
+                    {i + 1}
+                  </td>
+                  <td style={{ padding: "0.625rem 1rem" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-primary)" }}>
+                      {c.user_id}
+                    </span>
+                  </td>
+                  <td style={{ padding: "0.625rem 1rem", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)" }}>
+                    {(c.total_inferences || 0).toLocaleString()}
+                  </td>
+                  <td style={{ padding: "0.625rem 1rem", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--green-accent)" }}>
+                    {Number(c.total_co2e_g || 0).toFixed(3)}g
+                  </td>
+                  <td style={{ padding: "0.625rem 1rem", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-secondary)" }}>
+                    {Number(c.total_energy_wh || 0).toFixed(2)} Wh
+                  </td>
+                  <td style={{ padding: "0.625rem 1rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ width: 48, height: 6, borderRadius: 9999, backgroundColor: "var(--track-bg)" }}>
+                        <div style={{
+                          height: "100%",
+                          borderRadius: 9999,
+                          width: `${c.sustainability_score || 0}%`,
+                          backgroundColor: (c.sustainability_score || 0) >= 80 ? "#22c55e" : (c.sustainability_score || 0) >= 50 ? "#f59e0b" : "#ef4444",
+                        }} />
+                      </div>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>
+                        {c.sustainability_score || 0}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "0.625rem 1rem" }}>
+                    <span style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      backgroundColor: c.trend === "on_track" ? "rgba(34,197,94,0.1)" : c.trend === "at_risk" ? "rgba(245,158,11,0.1)" : "rgba(248,113,113,0.1)",
+                      color: c.trend === "on_track" ? "var(--green-accent)" : c.trend === "at_risk" ? "var(--amber-accent)" : "var(--red-accent)",
+                    }}>
+                      {c.trend || "\u2014"}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+
+    </motion.div>
   );
 }
