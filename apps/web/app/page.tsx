@@ -4,10 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { ArrowRight, ArrowUpRight, Leaf } from "lucide-react";
-import {
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, Legend,
-} from "recharts";
 
 /* ── Live CO₂ counter ──────────────────────────────────────────── */
 // ~5 billion AI queries/day globally × avg 0.4g CO2 = ~2,000,000g/day
@@ -106,194 +102,228 @@ const FEATURES = [
 ];
 
 
-/* ── Carbon pathways chart data ────────────────────────────────── */
-// Historical: Global Carbon Project. Scenarios: CICERO/IPCC SSP adaptations.
-// Every row has all keys — null where not applicable so Recharts renders cleanly
-const CARBON_DATA = [
-  { year: 1980, historical: 22.5, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 1985, historical: 23.8, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 1990, historical: 26.1, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 1995, historical: 27.4, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 2000, historical: 29.2, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 2005, historical: 32.8, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 2010, historical: 35.6, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 2015, historical: 38.2, path15: null, path20: null, path30: null, removal15: null, removal20: null },
-  { year: 2020, historical: 41.8, path15: 41.8, path20: 41.8, path30: 41.8, removal15: 0, removal20: 0 },
-  { year: 2025, historical: null, path15: 36.0, path20: 39.5, path30: 43.2, removal15: -1.0, removal20: -0.4 },
-  { year: 2030, historical: null, path15: 28.0, path20: 35.0, path30: 44.8, removal15: -2.5, removal20: -0.9 },
-  { year: 2035, historical: null, path15: 19.0, path20: 29.5, path30: 45.5, removal15: -4.2, removal20: -1.6 },
-  { year: 2040, historical: null, path15: 10.5, path20: 23.0, path30: 45.8, removal15: -5.8, removal20: -2.4 },
-  { year: 2045, historical: null, path15:  3.5, path20: 16.0, path30: 45.5, removal15: -7.0, removal20: -3.2 },
-  { year: 2050, historical: null, path15: -1.5, path20:  9.0, path30: 44.8, removal15: -8.0, removal20: -4.0 },
-  { year: 2055, historical: null, path15: -4.5, path20:  3.5, path30: 43.2, removal15: -8.8, removal20: -4.8 },
-  { year: 2060, historical: null, path15: -6.5, path20: -1.0, path30: 41.5, removal15: -9.4, removal20: -5.5 },
-  { year: 2065, historical: null, path15: -7.8, path20: -4.0, path30: 39.5, removal15: -9.8, removal20: -6.2 },
-  { year: 2070, historical: null, path15: -8.8, path20: -6.5, path30: 37.5, removal15:-10.0, removal20: -6.8 },
-  { year: 2075, historical: null, path15: -9.5, path20: -8.5, path30: 35.0, removal15:-10.2, removal20: -7.2 },
-  { year: 2080, historical: null, path15:-10.0, path20: -9.8, path30: 32.0, removal15:-10.3, removal20: -7.5 },
-  { year: 2085, historical: null, path15:-10.4, path20:-10.5, path30: 29.0, removal15:-10.3, removal20: -7.8 },
-  { year: 2090, historical: null, path15:-10.6, path20:-10.8, path30: 26.0, removal15:-10.2, removal20: -8.0 },
-  { year: 2095, historical: null, path15:-10.7, path20:-11.0, path30: 23.5, removal15:-10.1, removal20: -8.1 },
-  { year: 2100, historical: null, path15:-10.8, path20:-11.2, path30: 21.5, removal15:-10.0, removal20: -8.2 },
-];
-
+/* ── Carbon pathways chart — pure SVG, no Recharts ─────────────── */
 type Scenario = "1.5" | "2" | "3";
 
-const SCENARIO_CONFIG: Record<Scenario, { label: string; pathKey: string; removalKey: string; color: string; desc: string }> = {
-  "1.5": { label: "~1.5°C",             pathKey: "path15", removalKey: "removal15", color: "#60a5fa", desc: "Aggressive immediate cuts + large-scale carbon removal" },
-  "2":   { label: "~2°C",               pathKey: "path20", removalKey: "removal20", color: "#a78bfa", desc: "Gradual reduction over 30 years, moderate removal" },
-  "3":   { label: "~3°C (Current path)",pathKey: "path30", removalKey: "",          color: "#6b7280", desc: "Business as usual — catastrophic by end of century" },
-};
+// [year, historical, path15, path20, path30, removal15, removal20]
+// historical=NaN for future years, path/removal=NaN for historical years
+const RAW: [number, number, number, number, number, number, number][] = [
+  [1980, 22.5, NaN, NaN, NaN, NaN, NaN],
+  [1985, 23.8, NaN, NaN, NaN, NaN, NaN],
+  [1990, 26.1, NaN, NaN, NaN, NaN, NaN],
+  [1995, 27.4, NaN, NaN, NaN, NaN, NaN],
+  [2000, 29.2, NaN, NaN, NaN, NaN, NaN],
+  [2005, 32.8, NaN, NaN, NaN, NaN, NaN],
+  [2010, 35.6, NaN, NaN, NaN, NaN, NaN],
+  [2015, 38.2, NaN, NaN, NaN, NaN, NaN],
+  [2020, 41.8, 41.8, 41.8, 41.8,  0.0,  0.0],
+  [2025,  NaN, 36.0, 39.5, 43.2, -1.0, -0.4],
+  [2030,  NaN, 28.0, 35.0, 44.8, -2.5, -0.9],
+  [2035,  NaN, 19.0, 29.5, 45.5, -4.2, -1.6],
+  [2040,  NaN, 10.5, 23.0, 45.8, -5.8, -2.4],
+  [2045,  NaN,  3.5, 16.0, 45.5, -7.0, -3.2],
+  [2050,  NaN, -1.5,  9.0, 44.8, -8.0, -4.0],
+  [2055,  NaN, -4.5,  3.5, 43.2, -8.8, -4.8],
+  [2060,  NaN, -6.5, -1.0, 41.5, -9.4, -5.5],
+  [2065,  NaN, -7.8, -4.0, 39.5, -9.8, -6.2],
+  [2070,  NaN, -8.8, -6.5, 37.5,-10.0, -6.8],
+  [2075,  NaN, -9.5, -8.5, 35.0,-10.2, -7.2],
+  [2080,  NaN,-10.0, -9.8, 32.0,-10.3, -7.5],
+  [2085,  NaN,-10.4,-10.5, 29.0,-10.3, -7.8],
+  [2090,  NaN,-10.6,-10.8, 26.0,-10.2, -8.0],
+  [2095,  NaN,-10.7,-11.0, 23.5,-10.1, -8.1],
+  [2100,  NaN,-10.8,-11.2, 21.5,-10.0, -8.2],
+];
 
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      backgroundColor: "#0d0d0d",
-      border: "1px solid #2a2a2a",
-      borderRadius: "6px",
-      padding: "10px 14px",
-      fontFamily: "var(--font-mono)",
-      fontSize: "11px",
-    }}>
-      <p style={{ color: "#525252", marginBottom: "6px", fontSize: "10px" }}>{label}</p>
-      {payload.map((p: any) => (
-        p.value != null && (
-          <p key={p.dataKey} style={{ color: p.color, margin: "2px 0" }}>
-            {p.name}: <span style={{ color: "#f0ece4" }}>{Number(p.value).toFixed(1)} GtCO₂/yr</span>
-          </p>
-        )
-      ))}
-    </div>
-  );
-}
+const SCENARIOS: Record<Scenario, { label: string; color: string; pathIdx: number; removalIdx: number | null; desc: string }> = {
+  "1.5": { label: "~1.5°C",              color: "#60a5fa", pathIdx: 2, removalIdx: 5, desc: "Aggressive cuts + large-scale carbon removal" },
+  "2":   { label: "~2°C",                color: "#a78bfa", pathIdx: 3, removalIdx: 6, desc: "Gradual reduction over 30 years, moderate removal" },
+  "3":   { label: "~3°C (Current path)", color: "#9ca3af", pathIdx: 4, removalIdx: null, desc: "Business as usual — catastrophic warming" },
+};
 
 function CarbonChart() {
   const [scenario, setScenario] = useState<Scenario>("1.5");
-  const cfg = SCENARIO_CONFIG[scenario];
+  const [hoverX, setHoverX] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const cfg = SCENARIOS[scenario];
+
+  // Chart dimensions
+  const W = 900, H = 340;
+  const PAD = { top: 16, right: 24, bottom: 40, left: 52 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const MIN_Y = -20, MAX_Y = 55;
+  const MIN_X = 1980, MAX_X = 2100;
+
+  const toX = (year: number) => PAD.left + ((year - MIN_X) / (MAX_X - MIN_X)) * cW;
+  const toY = (val: number)  => PAD.top  + ((MAX_Y - val)  / (MAX_Y - MIN_Y)) * cH;
+
+  // Build SVG path from data column (skip NaN)
+  const makePath = (colIdx: number) => {
+    const pts = RAW.filter(r => !isNaN(r[colIdx]));
+    if (pts.length === 0) return "";
+    return pts.map((r, i) => `${i === 0 ? "M" : "L"}${toX(r[0]).toFixed(1)},${toY(r[colIdx]).toFixed(1)}`).join(" ");
+  };
+
+  // Removal area polygon (fill between removal line and y=0)
+  const makeRemovalArea = (colIdx: number) => {
+    const pts = RAW.filter(r => !isNaN(r[colIdx]));
+    if (pts.length === 0) return "";
+    const top = pts.map(r => `${toX(r[0]).toFixed(1)},${toY(0).toFixed(1)}`).join(" ");
+    const bottom = pts.map(r => `${toX(r[0]).toFixed(1)},${toY(r[colIdx]).toFixed(1)}`).reverse().join(" ");
+    return `M ${top} L ${bottom} Z`;
+  };
+
+  // Hover tooltip
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const year = MIN_X + ((mx - PAD.left) / cW) * (MAX_X - MIN_X);
+    setHoverX(Math.round(year / 5) * 5);
+  };
+
+  const hoverRow = hoverX ? RAW.find(r => r[0] === hoverX) : null;
+
+  const yTicks = [-20, -10, 0, 10, 20, 30, 40, 50];
+  const xTicks = [1980, 1990, 2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090, 2100];
 
   return (
-    <div style={{ backgroundColor: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "12px", padding: "2rem" }}>
+    <div style={{ backgroundColor: "#0d0d0d", border: "1px solid #1e1e1e", borderRadius: "12px", padding: "1.75rem" }}>
       {/* Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#525252", whiteSpace: "nowrap" }}>
-          Limit global temperature increase to:
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#6b7280", whiteSpace: "nowrap" }}>
+          Limit temperature increase to:
         </span>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {(["1.5", "2", "3"] as Scenario[]).map(s => (
-            <button
-              key={s}
-              onClick={() => setScenario(s)}
-              style={{
-                padding: "4px 12px",
-                borderRadius: "20px",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.15s",
-                border: scenario === s ? "none" : "1px solid #2a2a2a",
-                backgroundColor: scenario === s ? SCENARIO_CONFIG[s].color : "transparent",
-                color: scenario === s ? "#fff" : "#525252",
-              }}
-            >
-              {SCENARIO_CONFIG[s].label}
+            <button key={s} onClick={() => setScenario(s)} style={{
+              padding: "4px 14px", borderRadius: "20px",
+              fontFamily: "monospace", fontSize: "11px", fontWeight: 600, cursor: "pointer",
+              border: scenario === s ? "none" : "1px solid #2a2a2a",
+              backgroundColor: scenario === s ? SCENARIOS[s].color : "transparent",
+              color: scenario === s ? "#000" : "#6b7280",
+              transition: "all 0.15s",
+            }}>
+              {SCENARIOS[s].label}
             </button>
           ))}
         </div>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#3a3a3a", marginLeft: "auto" }}>
+        <span style={{ fontFamily: "monospace", fontSize: "10px", color: "#374151", marginLeft: "auto" }}>
           {cfg.desc}
         </span>
       </div>
 
       {/* Legend */}
-      <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "1.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
         {[
-          { color: "#e5e7eb", dash: false, label: "Historical emissions" },
-          { color: cfg.color, dash: true,  label: `${cfg.label} path` },
-          ...(scenario !== "3" ? [{ color: "#6366f1", dash: false, label: "Carbon removal" }] : []),
+          { color: "#d1d5db", dash: false, label: "Historical emissions" },
+          { color: cfg.color,  dash: true,  label: `${cfg.label} path` },
+          ...(cfg.removalIdx !== null ? [{ color: "#818cf8", dash: false, label: "Carbon removal" }] : []),
         ].map(l => (
           <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <svg width="20" height="8">
-              <line
-                x1="0" y1="4" x2="20" y2="4"
-                stroke={l.color} strokeWidth="2"
-                strokeDasharray={l.dash ? "4 3" : "none"}
-              />
+            <svg width="22" height="8">
+              <line x1="0" y1="4" x2="22" y2="4" stroke={l.color} strokeWidth="2" strokeDasharray={l.dash ? "5 3" : undefined} />
             </svg>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#525252", letterSpacing: "0.06em" }}>
-              {l.label}
-            </span>
+            <span style={{ fontFamily: "monospace", fontSize: "10px", color: "#6b7280" }}>{l.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Chart */}
-      <ResponsiveContainer width="100%" height={380}>
-        <ComposedChart data={CARBON_DATA} margin={{ top: 10, right: 30, bottom: 30, left: 10 }}>
-          <CartesianGrid stroke="#222" strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey="year"
-            tick={{ fontFamily: "monospace", fontSize: 11, fill: "#6b7280" }}
-            axisLine={{ stroke: "#333" }}
-            tickLine={false}
-            label={{ value: "YEAR", position: "insideBottom", offset: -12, style: { fontFamily: "monospace", fontSize: 10, fill: "#4b5563", letterSpacing: "0.12em" } }}
-          />
-          <YAxis
-            tick={{ fontFamily: "monospace", fontSize: 11, fill: "#6b7280" }}
-            axisLine={false}
-            tickLine={false}
-            domain={[-20, 55]}
-            tickCount={8}
-            label={{ value: "NET CO₂ (GtCO₂/YR)", angle: -90, position: "insideLeft", offset: 15, style: { fontFamily: "monospace", fontSize: 9, fill: "#4b5563", letterSpacing: "0.06em" } }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={0} stroke="#444" strokeWidth={1.5} />
-          <ReferenceLine x={2020} stroke="#444" strokeWidth={1} strokeDasharray="5 4" label={{ value: "2020", position: "top", style: { fontFamily: "monospace", fontSize: 10, fill: "#6b7280" } }} />
+      {/* SVG Chart */}
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", display: "block", cursor: "crosshair" }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverX(null)}
+      >
+        {/* Y gridlines */}
+        {yTicks.map(v => (
+          <g key={v}>
+            <line x1={PAD.left} y1={toY(v)} x2={W - PAD.right} y2={toY(v)} stroke="#1f2937" strokeWidth="1" />
+            <text x={PAD.left - 6} y={toY(v) + 4} textAnchor="end" fill="#6b7280" fontSize="10" fontFamily="monospace">{v}</text>
+          </g>
+        ))}
 
-          {/* Carbon removal shaded area (below zero) */}
-          {scenario !== "3" && cfg.removalKey && (
-            <Area
-              dataKey={cfg.removalKey}
-              name="Carbon removal"
-              fill="rgba(99,102,241,0.18)"
-              stroke="#6366f1"
-              strokeWidth={1.5}
-              connectNulls
-              isAnimationActive
-              dot={false}
-            />
-          )}
+        {/* X axis ticks */}
+        {xTicks.map(yr => (
+          <g key={yr}>
+            <text x={toX(yr)} y={H - PAD.bottom + 16} textAnchor="middle" fill="#6b7280" fontSize="10" fontFamily="monospace">{yr}</text>
+          </g>
+        ))}
 
-          {/* Historical solid line — bright white */}
-          <Line
-            dataKey="historical"
-            name="Historical emissions"
-            stroke="#e5e7eb"
-            strokeWidth={3}
-            dot={false}
-            connectNulls
-            isAnimationActive
-          />
+        {/* Y=0 zero line */}
+        <line x1={PAD.left} y1={toY(0)} x2={W - PAD.right} y2={toY(0)} stroke="#374151" strokeWidth="1.5" />
 
-          {/* Scenario path — colored dashed */}
-          <Line
-            dataKey={cfg.pathKey}
-            name={cfg.label}
-            stroke={cfg.color}
-            strokeWidth={2.5}
-            strokeDasharray="7 4"
-            dot={false}
-            connectNulls
-            isAnimationActive
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+        {/* 2020 divider */}
+        <line x1={toX(2020)} y1={PAD.top} x2={toX(2020)} y2={H - PAD.bottom} stroke="#374151" strokeWidth="1" strokeDasharray="5 4" />
+        <text x={toX(2020)} y={PAD.top - 4} textAnchor="middle" fill="#4b5563" fontSize="10" fontFamily="monospace">2020</text>
 
-      {/* Bottom note */}
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", marginTop: "1rem", lineHeight: 1.6 }}>
-        Historical emissions via Global Carbon Project. Current path shows SSP4-6.0. Removal pathways adapted from CICERO/IPCC AR6.
-        GreenLedger targets the carbon removal gap — every inference offset, every model decision optimised.
+        {/* Axis labels */}
+        <text x={PAD.left - 40} y={PAD.top + cH / 2} textAnchor="middle" fill="#4b5563" fontSize="9" fontFamily="monospace"
+          transform={`rotate(-90, ${PAD.left - 40}, ${PAD.top + cH / 2})`}>
+          NET CO₂ (GtCO₂/YR)
+        </text>
+        <text x={PAD.left + cW / 2} y={H - 4} textAnchor="middle" fill="#4b5563" fontSize="9" fontFamily="monospace" letterSpacing="2">YEAR</text>
+
+        {/* Carbon removal area */}
+        {cfg.removalIdx !== null && (
+          <path d={makeRemovalArea(cfg.removalIdx)} fill="rgba(99,102,241,0.15)" />
+        )}
+
+        {/* Historical line */}
+        <path d={makePath(1)} fill="none" stroke="#d1d5db" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Scenario path */}
+        <path d={makePath(cfg.pathIdx)} fill="none" stroke={cfg.color} strokeWidth="2.5"
+          strokeDasharray="8 5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Removal line */}
+        {cfg.removalIdx !== null && (
+          <path d={makePath(cfg.removalIdx)} fill="none" stroke="#818cf8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+
+        {/* 2020 dot */}
+        <circle cx={toX(2020)} cy={toY(41.8)} r="4" fill="#0d0d0d" stroke="#d1d5db" strokeWidth="2" />
+
+        {/* Hover crosshair + tooltip */}
+        {hoverX !== null && hoverRow && (
+          <>
+            <line x1={toX(hoverX)} y1={PAD.top} x2={toX(hoverX)} y2={H - PAD.bottom}
+              stroke="#4b5563" strokeWidth="1" strokeDasharray="3 3" />
+            {/* tooltip box */}
+            {(() => {
+              const tx = toX(hoverX);
+              const boxX = tx > W - 160 ? tx - 145 : tx + 10;
+              const vals = [
+                { label: "Historical", v: hoverRow[1], color: "#d1d5db" },
+                { label: cfg.label,    v: hoverRow[cfg.pathIdx], color: cfg.color },
+                ...(cfg.removalIdx !== null ? [{ label: "Removal", v: hoverRow[cfg.removalIdx], color: "#818cf8" }] : []),
+              ].filter(x => !isNaN(x.v));
+              if (vals.length === 0) return null;
+              return (
+                <g>
+                  <rect x={boxX} y={PAD.top + 4} width="130" height={14 + vals.length * 16}
+                    rx="4" fill="#111827" stroke="#374151" strokeWidth="1" />
+                  <text x={boxX + 8} y={PAD.top + 16} fill="#9ca3af" fontSize="10" fontFamily="monospace">{hoverX}</text>
+                  {vals.map((v, i) => (
+                    <text key={v.label} x={boxX + 8} y={PAD.top + 30 + i * 16} fill={v.color} fontSize="10" fontFamily="monospace">
+                      {v.label}: {v.v.toFixed(1)} Gt
+                    </text>
+                  ))}
+                </g>
+              );
+            })()}
+          </>
+        )}
+      </svg>
+
+      <p style={{ fontFamily: "monospace", fontSize: "9px", color: "#374151", marginTop: "0.75rem", lineHeight: 1.6 }}>
+        Source: Global Carbon Project (historical) · CICERO/IPCC AR6 (pathways) · GreenLedger routes every inference levy to verified carbon removal.
       </p>
     </div>
   );
