@@ -33,7 +33,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      {/* Replaced 'inter.className' with your custom font variables */}
+      <body className={`${syne.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} antialiased`}>
         <UserProvider>
           {children}
         </UserProvider>

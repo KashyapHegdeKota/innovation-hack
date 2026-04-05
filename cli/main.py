@@ -43,6 +43,11 @@ ROUTER_URL   = os.environ.get("ROUTER_URL",   "https://api.kashyaphegde.com/gree
 INFER_URL    = os.environ.get("INFER_URL",    "https://api.kashyaphegde.com/greenledger/v1/infer")
 RECEIPTS_URL = os.environ.get("RECEIPTS_URL", "https://api.kashyaphegde.com/greenledger/v1/receipts")
 
+# Global keys for direct streaming fallbacks
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+OPENAI_API_KEY    = os.environ.get("OPENAI_API_KEY",    "")
+GEMINI_API_KEY    = os.environ.get("GEMINI_API_KEY",    "")
+
 # --- AUTHENTICATION HEADERS ---
 # Load the config once at startup to grab the Auth0 token
 _local_cfg = load_config()
@@ -181,7 +186,7 @@ async def check_router(user_prompt: str, model_id: str) -> dict:
 async def call_infer(prompt: str, model_id: str, max_tokens: int = 1024) -> Optional[dict]:
     """Call your FastAPI /v1/infer. Returns response dict or None on failure."""
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             resp = await client.post(
                 INFER_URL,
                 headers=API_HEADERS,
