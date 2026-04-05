@@ -55,11 +55,11 @@ function Sec({ children }: { children: string }) {
     <div className="flex items-center gap-3 mb-4">
       <span style={{
         fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700,
-        letterSpacing: "0.14em", textTransform: "uppercase", color: "#2e2e2e",
+        letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-dim)",
       }}>
         {children}
       </span>
-      <div style={{ flex: 1, height: "1px", backgroundColor: "#1a1a1a" }} />
+      <div style={{ flex: 1, height: "1px", backgroundColor: "var(--rule)" }} />
     </div>
   );
 }
@@ -169,12 +169,12 @@ export default function DashboardPage() {
       {/* ── Hero: grade word + score left / metrics right ────────── */}
       <motion.div
         variants={item}
-        style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "2.5rem", marginBottom: "2.5rem" }}
+        style={{ borderBottom: "1px solid var(--rule)", paddingBottom: "2.5rem", marginBottom: "2.5rem" }}
       >
         <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 0 }}>
 
           {/* LEFT — grade word dominates */}
-          <div style={{ borderRight: "1px solid #1a1a1a", paddingRight: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ borderRight: "1px solid var(--rule)", paddingRight: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
 
             {/* The word: EXCELLENT / GOOD / FAIR etc */}
             <span
@@ -230,8 +230,8 @@ export default function DashboardPage() {
                 <div
                   key={m.label}
                   style={{
-                    borderLeft:   i % 3 !== 0 ? "1px solid #1a1a1a" : "none",
-                    borderBottom: i < 3        ? "1px solid #1a1a1a" : "none",
+                    borderLeft:   i % 3 !== 0 ? "1px solid var(--rule)" : "none",
+                    borderBottom: i < 3        ? "1px solid var(--rule)" : "none",
                     padding: `${i < 3 ? "0" : "1.25rem"} ${i % 3 !== 2 ? "1.25rem" : "0"} ${i < 3 ? "1.25rem" : "0"} ${i % 3 !== 0 ? "1.25rem" : "0"}`,
                     display: "flex",
                     flexDirection: "column",
@@ -272,7 +272,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* ── Green Router ──────────────────────────────────────────── */}
-      <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+      <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", paddingTop: "2rem", marginBottom: "2.5rem" }}>
         <Sec>Green Router</Sec>
         <RoutingPipeline
           routedCount={routingStats.routed}
@@ -283,7 +283,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* ── Emissions chart + model breakdown ─────────────────────── */}
-      <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+      <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", paddingTop: "2rem", marginBottom: "2.5rem" }}>
         <Sec>Emissions</Sec>
         <div className="grid grid-cols-12 gap-5">
           <div className="col-span-8" style={{ height: 440 }}>
@@ -291,7 +291,7 @@ export default function DashboardPage() {
               ? <div style={{ height: "100%" }}><EmissionsChart data={emissionsData} /></div>
               : (
                 <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#2a2a2a" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-dim)" }}>
                     No data yet — run a CLI query to populate
                   </p>
                 </div>
@@ -303,7 +303,7 @@ export default function DashboardPage() {
               ? <div style={{ height: "100%" }}><ModelPieChart data={modelData} /></div>
               : (
                 <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#2a2a2a" }}>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-dim)" }}>
                     No model data yet
                   </p>
                 </div>
@@ -315,7 +315,7 @@ export default function DashboardPage() {
 
       {/* ── Recent activity ───────────────────────────────────────── */}
       {receipts.length > 0 && (
-        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+        <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", paddingTop: "2rem", marginBottom: "2.5rem" }}>
           <Sec>Recent Activity</Sec>
           <ActivityTable receipts={receipts} />
         </motion.div>
@@ -323,7 +323,7 @@ export default function DashboardPage() {
 
       {/* ── Recommendations ───────────────────────────────────────── */}
       {sc.recommendations?.length > 0 && (
-        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem" }}>
+        <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", paddingTop: "2rem" }}>
           <Sec>Optimization Insights</Sec>
           <div className="space-y-2">
             {sc.recommendations.map((rec: any) => (

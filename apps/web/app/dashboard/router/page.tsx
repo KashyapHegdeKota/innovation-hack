@@ -82,7 +82,7 @@ export default function RouterPage() {
       </motion.div>
 
       {/* ── Stat strip ─────────────────────────────────────────── */}
-      <motion.div variants={item} style={{ borderBottom: "1px solid #1a1a1a", borderTop: "1px solid #1a1a1a", padding: "1.25rem 0", marginBottom: "2rem" }}>
+      <motion.div variants={item} style={{ borderBottom: "1px solid var(--rule)", borderTop: "1px solid var(--rule)", padding: "1.25rem 0", marginBottom: "2rem" }}>
         <div className="flex items-stretch">
           {[
             { label: "Total Decisions",           value: String(total),         accent: false },
@@ -99,7 +99,7 @@ export default function RouterPage() {
                   {s.label}
                 </p>
               </div>
-              {i < 3 && <div style={{ width: "1px", backgroundColor: "#1a1a1a", margin: "0 2rem", alignSelf: "stretch" }} />}
+              {i < 3 && <div style={{ width: "1px", backgroundColor: "var(--rule)", margin: "0 2rem", alignSelf: "stretch" }} />}
             </div>
           ))}
         </div>
@@ -109,12 +109,12 @@ export default function RouterPage() {
       <motion.div variants={item}>
         {decisions.length === 0 ? (
           <div style={{ padding: "4rem 0", textAlign: "center" }}>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#2a2a2a" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-dim)" }}>
               No routing decisions yet — run queries via CLI to populate
             </p>
           </div>
         ) : (
-          <div style={{ borderTop: "1px solid #1a1a1a" }}>
+          <div style={{ borderTop: "1px solid var(--rule)" }}>
             {decisions.map((d, rowIdx) => {
               const a        = ASSESSMENT[d.assessment] || ASSESSMENT.appropriate;
               const expanded = expandedId === d.id;
@@ -132,11 +132,11 @@ export default function RouterPage() {
                       gap: "1.25rem",
                       alignItems: "center",
                       padding: "1rem 0",
-                      borderBottom: "1px solid #1a1a1a",
+                      borderBottom: "1px solid var(--rule)",
                       borderLeft: `2px solid ${expanded ? a.color : "transparent"}`,
                       paddingLeft: expanded ? "1rem" : "2px",
                       transition: "all 0.15s ease",
-                      backgroundColor: expanded ? "rgba(255,255,255,0.01)" : "transparent",
+                      backgroundColor: expanded ? "var(--hover-bg)" : "transparent",
                     }}
                   >
                     {/* Assessment */}
@@ -165,21 +165,21 @@ export default function RouterPage() {
                       </span>
                       {rerouted && (
                         <>
-                          <span style={{ color: "#2a2a2a", fontSize: "10px" }}>→</span>
+                          <span style={{ color: "var(--text-dim)", fontSize: "10px" }}>→</span>
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#22c55e", fontWeight: 700 }}>
                             {short(d.final_model)}
                           </span>
                         </>
                       )}
                       {!rerouted && (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a" }}>no change</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-dim)" }}>no change</span>
                       )}
                     </div>
 
                     {/* CO₂ savings */}
                     <span style={{
                       fontFamily: "var(--font-mono)", fontSize: "11px", flexShrink: 0,
-                      color: d.accepted_recommendation ? "#22c55e" : "#2a2a2a",
+                      color: d.accepted_recommendation ? "#22c55e" : "var(--text-dim)",
                       width: 60, textAlign: "right",
                     }}>
                       {d.accepted_recommendation && d.savings_if_switched_pct > 0 ? `−${d.savings_if_switched_pct}%` : "—"}
@@ -187,12 +187,12 @@ export default function RouterPage() {
 
                     {/* Time + chevron */}
                     <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#2e2e2e" }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-dim)" }}>
                         {fmt(d.timestamp)}
                       </span>
                       {expanded
                         ? <ChevronUp  className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "#2a2a2a" }} />}
+                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--text-dim)" }} />}
                     </div>
                   </div>
 
@@ -204,13 +204,13 @@ export default function RouterPage() {
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                        style={{ overflow: "hidden", borderBottom: "1px solid #1a1a1a" }}
+                        style={{ overflow: "hidden", borderBottom: "1px solid var(--rule)" }}
                       >
                         <div style={{ padding: "1.5rem 0 1.5rem 1rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
 
                           {/* Left: model comparison */}
                           <div>
-                            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "1rem" }}>
+                            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-dim)", marginBottom: "1rem" }}>
                               Model Comparison
                             </p>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
@@ -221,10 +221,10 @@ export default function RouterPage() {
                                 <div key={m.label} style={{
                                   padding: "1rem",
                                   borderRadius: "8px",
-                                  border: `1px solid ${m.green ? "rgba(34,197,94,0.2)" : "#1e1e1e"}`,
-                                  backgroundColor: m.green ? "rgba(34,197,94,0.03)" : "rgba(255,255,255,0.02)",
+                                  border: `1px solid ${m.green ? "rgba(34,197,94,0.2)" : "var(--border)"}`,
+                                  backgroundColor: m.green ? "rgba(34,197,94,0.03)" : "var(--hover-bg)",
                                 }}>
-                                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: m.green ? "rgba(34,197,94,0.6)" : "#2e2e2e", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>
+                                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: m.green ? "rgba(34,197,94,0.6)" : "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.5rem" }}>
                                     {m.label}
                                   </p>
                                   <p style={{ fontFamily: "var(--font-mono)", fontSize: "12px", fontWeight: 700, color: m.green ? "#22c55e" : "var(--text-primary)", marginBottom: "0.75rem", letterSpacing: "-0.02em" }}>
@@ -233,11 +233,11 @@ export default function RouterPage() {
                                   <div style={{ display: "flex", gap: "1rem" }}>
                                     <div>
                                       <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: m.green ? "#22c55e" : "var(--text-muted)" }}>{m.co2 ?? "—"}g</p>
-                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "0.08em" }}>CO₂e</p>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>CO₂e</p>
                                     </div>
                                     <div>
                                       <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>{m.energy ?? "—"} Wh</p>
-                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "0.08em" }}>Energy</p>
+                                      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Energy</p>
                                     </div>
                                   </div>
                                 </div>
@@ -253,17 +253,17 @@ export default function RouterPage() {
                           {/* Right: alternatives chart */}
                           {d.alternatives?.length > 0 && (
                             <div>
-                              <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "1rem" }}>
+                              <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-dim)", marginBottom: "1rem" }}>
                                 Alternatives — Energy (Wh)
                               </p>
                               <ResponsiveContainer width="100%" height={Math.min(d.alternatives.length * 36 + 20, 200)}>
                                 <BarChart data={d.alternatives} layout="vertical" margin={{ left: 90, right: 16, top: 0, bottom: 0 }}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" horizontal={false} />
-                                  <XAxis type="number" tick={{ fill: "#2a2a2a", fontSize: 9, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
+                                  <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" horizontal={false} />
+                                  <XAxis type="number" tick={{ fill: "var(--text-dim)", fontSize: 9, fontFamily: "monospace" }} axisLine={false} tickLine={false} />
                                   <YAxis type="category" dataKey="model" tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }}
                                     axisLine={false} tickLine={false} width={85} tickFormatter={(v: string) => short(v)} />
                                   <Tooltip
-                                    contentStyle={{ backgroundColor: "#111", border: "1px solid #1e1e1e", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace" }}
+                                    contentStyle={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "6px", fontSize: "11px", fontFamily: "monospace" }}
                                     formatter={(val: any) => [`${val} Wh`, "Energy"]}
                                   />
                                   <Bar dataKey="energy_wh" radius={[0, 3, 3, 0]}>

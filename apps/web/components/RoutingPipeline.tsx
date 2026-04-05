@@ -82,7 +82,7 @@ export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoide
           <span style={{ fontSize: "11px", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             "{d.prompt}"
           </span>
-          <span style={{ fontSize: "9px", color: "#2a2a2a", flexShrink: 0 }}>#{routedCount > 0 ? routedCount - idx : idx + 1}</span>
+          <span style={{ fontSize: "9px", color: "var(--text-dim)", flexShrink: 0 }}>#{routedCount > 0 ? routedCount - idx : idx + 1}</span>
         </motion.div>
       </AnimatePresence>
 
@@ -110,7 +110,7 @@ export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoide
           </p>
           {/* CO₂ bar */}
           <div>
-            <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "#1a1a1a", marginBottom: "6px", overflow: "hidden" }}>
+            <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "var(--rule)", marginBottom: "6px", overflow: "hidden" }}>
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${(d.co2Requested / maxCo2) * 100}%` }}
@@ -154,7 +154,7 @@ export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoide
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                style={{ fontSize: "14px", color: "#2a2a2a" }}
+                style={{ fontSize: "14px", color: "var(--text-dim)" }}
               >
                 →
               </motion.p>
@@ -196,7 +196,7 @@ export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoide
             </p>
             {/* CO₂ bar */}
             <div>
-              <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "#1a1a1a", marginBottom: "6px", overflow: "hidden" }}>
+              <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "var(--rule)", marginBottom: "6px", overflow: "hidden" }}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${(d.co2Selected / maxCo2) * 100}%` }}
@@ -213,7 +213,7 @@ export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoide
       </div>
 
       {/* ── Stats strip ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid #1a1a1a" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--rule)" }}>
         {[
           { label: "Total Routed",  value: String(routedCount)           },
           { label: "Rerouted",      value: String(downgradeCount)        },
@@ -224,12 +224,12 @@ export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoide
             style={{
               padding: "1rem 0",
               textAlign: i === 0 ? "left" : i === 2 ? "right" : "center",
-              borderLeft: i > 0 ? "1px solid #1a1a1a" : "none",
+              borderLeft: i > 0 ? "1px solid var(--rule)" : "none",
               paddingLeft: i > 0 ? "1.5rem" : 0,
               paddingRight: i < 2 ? "1.5rem" : 0,
             }}
           >
-            <p style={{ fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "4px" }}>
+            <p style={{ fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-dim)", marginBottom: "4px" }}>
               {s.label}
             </p>
             <p style={{ fontFamily: "var(--font-condensed)", fontSize: "1.8rem", color: i === 2 ? "#22c55e" : "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1 }}>

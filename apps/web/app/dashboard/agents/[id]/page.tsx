@@ -42,10 +42,10 @@ function formatDate(iso: string) {
 function Sec({ children }: { children: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#2e2e2e" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-dim)" }}>
         {children}
       </span>
-      <div style={{ flex: 1, height: "1px", backgroundColor: "#1a1a1a" }} />
+      <div style={{ flex: 1, height: "1px", backgroundColor: "var(--rule)" }} />
     </div>
   );
 }
@@ -151,11 +151,11 @@ export default function AgentDetailPage() {
       </motion.div>
 
       {/* ── Hero: grade word + score / metrics ────────────────────── */}
-      <motion.div variants={item} style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "2.5rem", marginBottom: "2.5rem" }}>
+      <motion.div variants={item} style={{ borderBottom: "1px solid var(--rule)", paddingBottom: "2.5rem", marginBottom: "2.5rem" }}>
         <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 0 }}>
 
           {/* LEFT — grade + agent name */}
-          <div style={{ borderRight: "1px solid #1a1a1a", paddingRight: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ borderRight: "1px solid var(--rule)", paddingRight: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <span className="font-condensed block" style={{
               fontSize: "clamp(3rem, 7vw, 6rem)",
               color: scoreColor,
@@ -177,7 +177,7 @@ export default function AgentDetailPage() {
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
               {agent.display_name || agent.agent_id}
             </p>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2e2e2e", marginTop: "2px" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-dim)", marginTop: "2px" }}>
               {agent.agent_id}
             </p>
           </div>
@@ -187,7 +187,7 @@ export default function AgentDetailPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", height: "100%" }}>
               {metrics.map((m, i) => (
                 <div key={m.label} style={{
-                  borderLeft: i > 0 ? "1px solid #1a1a1a" : "none",
+                  borderLeft: i > 0 ? "1px solid var(--rule)" : "none",
                   paddingLeft: i > 0 ? "1.5rem" : 0,
                   paddingRight: i < 2 ? "1.5rem" : 0,
                   display: "flex",
@@ -217,7 +217,7 @@ export default function AgentDetailPage() {
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="72%">
-                <PolarGrid stroke="#1a1a1a" />
+                <PolarGrid stroke="var(--rule)" />
                 <PolarAngleAxis dataKey="metric" tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }} />
                 <Radar dataKey="score" stroke={scoreColor} fill={scoreColor} fillOpacity={0.15} strokeWidth={1.5} />
               </RadarChart>
@@ -226,12 +226,12 @@ export default function AgentDetailPage() {
 
           {/* Carbon wallet */}
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "1rem" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-dim)", marginBottom: "1rem" }}>
               Carbon Wallet
             </p>
             {walletPct != null ? (
               <>
-                <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "#1a1a1a", marginBottom: "10px", overflow: "hidden" }}>
+                <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "var(--rule)", marginBottom: "10px", overflow: "hidden" }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(walletPct, 100)}%` }}
@@ -258,7 +258,7 @@ export default function AgentDetailPage() {
 
       {/* ── Emissions chart ───────────────────────────────────────── */}
       {emissionsData.length > 0 && (
-        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+        <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", paddingTop: "2rem", marginBottom: "2.5rem" }}>
           <Sec>{`${agent.display_name || agent.agent_id} — Emissions`}</Sec>
           <div style={{ height: 320 }}>
             <EmissionsChart data={emissionsData} />
@@ -268,11 +268,11 @@ export default function AgentDetailPage() {
 
       {/* ── Recent receipts ───────────────────────────────────────── */}
       {receipts.length > 0 && (
-        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem" }}>
+        <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", paddingTop: "2rem" }}>
           <Sec>Recent Receipts</Sec>
 
           {/* Header row */}
-          <div style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 90px 60px", gap: "1rem", padding: "0.5rem 0", borderBottom: "1px solid #1a1a1a" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 90px 60px", gap: "1rem", padding: "0.5rem 0", borderBottom: "1px solid var(--rule)" }}>
             {["Time", "Model", "CO₂e", "Energy", "Saved"].map((h, i) => (
               <span key={h} style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: i >= 2 ? "right" : "left" }}>
                 {h}
@@ -281,7 +281,7 @@ export default function AgentDetailPage() {
           </div>
 
           {receipts.map((r) => (
-            <div key={r.id} style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 90px 60px", gap: "1rem", alignItems: "center", padding: "0.75rem 0", borderBottom: "1px solid #1a1a1a" }}>
+            <div key={r.id} style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 90px 60px", gap: "1rem", alignItems: "center", padding: "0.75rem 0", borderBottom: "1px solid var(--rule)" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)" }}>
                 {formatDate(r.timestamp)}
               </span>

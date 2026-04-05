@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Syne, JetBrains_Mono, Bebas_Neue } from "next/font/google";
 import "./globals.css";
-import {UserProvider} from '@auth0/nextjs-auth0/client';
+import { UserProvider } from "@auth0/nextjs-auth0/client";
+import { ThemeProvider } from "../context/ThemeContext";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -33,10 +34,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <UserProvider>
-          {children}
-        </UserProvider>
+      <head>
+        {/* Anti-flash: apply stored theme before first paint */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('gl-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();` }} />
+      </head>
+      <body className={`${syne.variable} ${jetbrainsMono.variable} ${bebasNeue.variable}`}>
+        <ThemeProvider>
+          <UserProvider>
+            {children}
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
