@@ -35,35 +35,41 @@ class CliReceiptBody(BaseModel):
 @router.post("/receipts")
 async def push_receipt(body: CliReceiptBody):
     """Accept a receipt pushed directly from the CLI after direct-API inference."""
+    from fastapi import HTTPException
+    import logging
     receipt_id = str(uuid.uuid4())
-    add_receipt({
-        "id": receipt_id,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "agent_id": body.agent_id,
-        "model": body.model,
-        "provider": body.provider,
-        "tokens_in": body.tokens_in,
-        "tokens_out": body.tokens_out,
-        "latency_ms": body.latency_ms,
-        "environmental_cost": {
-            "co2e_g": body.co2e_g,
-            "energy_wh": body.energy_wh,
-            "water_ml": body.water_ml,
-        },
-        "offset": {
-            "levy_usd": body.levy_usd,
-            "destination": "stripe_climate_frontier",
-            "status": "confirmed",
-        },
-        "comparison": {
-            "naive_co2e_g": body.naive_co2e_g,
-            "savings_pct": body.savings_pct,
-        },
-        "requested_model": body.requested_model,
-        "prompt_preview": body.prompt_preview,
-    })
-    deduct_wallet(body.agent_id, body.co2e_g, receipt_id)
-    return {"receipt_id": receipt_id, "status": "ok"}
+    try:
+        add_receipt({
+            "id": receipt_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "agent_id": body.agent_id,
+            "model": body.model,
+            "provider": body.provider,
+            "tokens_in": body.tokens_in,
+            "tokens_out": body.tokens_out,
+            "latency_ms": body.latency_ms,
+            "environmental_cost": {
+                "co2e_g": body.co2e_g,
+                "energy_wh": body.energy_wh,
+                "water_ml": body.water_ml,
+            },
+            "offset": {
+                "levy_usd": body.levy_usd,
+                "destination": "stripe_climate_frontier",
+                "status": "confirmed",
+            },
+            "comparison": {
+                "naive_co2e_g": body.naive_co2e_g,
+                "savings_pct": body.savings_pct,
+            },
+            "requested_model": body.requested_model,
+            "prompt_preview": body.prompt_preview,
+        })
+        deduct_wallet(body.agent_id, body.co2e_g, receipt_id)
+        return {"receipt_id": receipt_id, "status": "ok"}
+    except Exception as e:
+        logging.error(f"Receipt save failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/receipts/export")

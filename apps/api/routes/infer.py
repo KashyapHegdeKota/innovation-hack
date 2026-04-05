@@ -306,5 +306,6 @@ async def analyze_and_route(request: RoutingRequest):
             decision = json.loads(data["message"]["content"])
             return {"status": "success", "routing": decision}
             
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to reach VM router: {repr(e)}")
+        except Exception:
+            # Ollama VM unreachable — return a sensible fallback routing decision
+            return {"status": "fallback", "routing": {"complexity": "standard", "recommended_model": request.selected_model}}
