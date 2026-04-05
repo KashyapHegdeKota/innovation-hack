@@ -1,12 +1,19 @@
 from supabase import create_client, Client
-from pydantic_settings import BaseSettings
 import os
 
-class DatabaseSettings(BaseSettings):
-    SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
-    SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+_client: Client | None = None
 
 
-def get_supabase_client():
-    """Stub — returns None. Legacy endpoints handle this gracefully."""
-    return None
+def get_supabase_client() -> Client | None:
+    global _client
+    if _client is not None:
+        return _client
+
+    url = os.environ.get("SUPABASE_URL", "")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    if not url or not key:
+        return None
+
+    _client = create_client(url, key)
+    return _client
