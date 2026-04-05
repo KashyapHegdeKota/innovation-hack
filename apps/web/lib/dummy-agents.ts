@@ -14,6 +14,27 @@ export interface DummyDecision {
   alternatives: { model: string; tier: string; energy_wh: number }[];
 }
 
+export interface DummyReceipt {
+  id: string;
+  timestamp: string;
+  model: string;
+  requested_model?: string;
+  prompt_preview: string;
+  environmental_cost: { co2e_g: number; energy_wh: number };
+  comparison?: { savings_pct: number };
+}
+
+export interface DummyEmissionDay {
+  date: string;
+  co2e: number;
+  energy: number;
+}
+
+export interface DummyRadar {
+  metric: string;
+  score: number;
+}
+
 export interface DummyAgent {
   agent_id: string;
   display_name: string;
@@ -24,6 +45,9 @@ export interface DummyAgent {
   wallet_utilization_pct: number;
   trend: "on_track" | "at_risk" | "exceeded";
   decisions: DummyDecision[];
+  receipts: DummyReceipt[];
+  emissions: DummyEmissionDay[];
+  radar: DummyRadar[];
 }
 
 const now = () => new Date().toISOString();
@@ -99,6 +123,30 @@ export const DUMMY_AGENTS: DummyAgent[] = [
         ],
       },
     ],
+    receipts: [
+      { id: "sb-r1", timestamp: hoursAgo(0.5), model: "claude-opus-4-6", requested_model: "claude-opus-4-6", prompt_preview: "Draft a follow-up email for the Q2 proposal", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+      { id: "sb-r2", timestamp: hoursAgo(1.2), model: "gpt-4o", requested_model: "gpt-4o", prompt_preview: "Summarize this meeting transcript into 3 bullet points", environmental_cost: { co2e_g: 1.08, energy_wh: 4.32 } },
+      { id: "sb-r3", timestamp: hoursAgo(2.8), model: "claude-opus-4-6", requested_model: "claude-opus-4-6", prompt_preview: "What is the contact email for Acme Corp?", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+      { id: "sb-r4", timestamp: hoursAgo(5.1), model: "claude-opus-4-6", requested_model: "claude-opus-4-6", prompt_preview: "Analyze competitor pricing strategy across 12 documents", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+      { id: "sb-r5", timestamp: hoursAgo(8.3), model: "gpt-4o", requested_model: "gpt-4o", prompt_preview: "Translate 'Thank you for your business' to Spanish", environmental_cost: { co2e_g: 1.08, energy_wh: 4.32 } },
+      { id: "sb-r6", timestamp: hoursAgo(14.0), model: "claude-opus-4-6", requested_model: "claude-opus-4-6", prompt_preview: "Write introduction for company overview deck", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+    ],
+    emissions: [
+      { date: "Mar 30", co2e: 18.2, energy: 72.8 },
+      { date: "Mar 31", co2e: 22.4, energy: 89.6 },
+      { date: "Apr 1",  co2e: 15.6, energy: 62.4 },
+      { date: "Apr 2",  co2e: 19.8, energy: 79.2 },
+      { date: "Apr 3",  co2e: 24.1, energy: 96.4 },
+      { date: "Apr 4",  co2e: 21.3, energy: 85.2 },
+      { date: "Apr 5",  co2e: 13.6, energy: 54.4 },
+    ],
+    radar: [
+      { metric: "Carbon Eff.", score: 28 },
+      { metric: "Budget Adh.", score: 12 },
+      { metric: "Offset Cov.", score: 45 },
+      { metric: "Opt. Adopt.", score: 22 },
+      { metric: "Trend",       score: 35 },
+    ],
   },
 
   {
@@ -169,6 +217,30 @@ export const DUMMY_AGENTS: DummyAgent[] = [
         ],
       },
     ],
+    receipts: [
+      { id: "cr-r1", timestamp: hoursAgo(0.8), model: "claude-3-5-sonnet", prompt_preview: "Review this TypeScript function for type safety issues", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "cr-r2", timestamp: hoursAgo(2.1), model: "claude-haiku-4-5", requested_model: "claude-3-5-sonnet", prompt_preview: "Does this variable name follow our naming convention?", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 }, comparison: { savings_pct: 88 } },
+      { id: "cr-r3", timestamp: hoursAgo(4.4), model: "claude-opus-4-6", prompt_preview: "Identify security vulnerabilities in this auth middleware", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+      { id: "cr-r4", timestamp: hoursAgo(6.9), model: "claude-3-5-sonnet", prompt_preview: "Explain why this React useEffect causes an infinite loop", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "cr-r5", timestamp: hoursAgo(11.2), model: "claude-opus-4-6", requested_model: "claude-haiku-4-5", prompt_preview: "Refactor entire payment service to use clean architecture", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+      { id: "cr-r6", timestamp: hoursAgo(18.0), model: "claude-haiku-4-5", requested_model: "claude-3-5-sonnet", prompt_preview: "Is this import statement unused?", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 }, comparison: { savings_pct: 88 } },
+    ],
+    emissions: [
+      { date: "Mar 30", co2e: 1.8, energy: 7.2 },
+      { date: "Mar 31", co2e: 2.4, energy: 9.6 },
+      { date: "Apr 1",  co2e: 1.2, energy: 4.8 },
+      { date: "Apr 2",  co2e: 3.1, energy: 12.4 },
+      { date: "Apr 3",  co2e: 2.6, energy: 10.4 },
+      { date: "Apr 4",  co2e: 1.9, energy: 7.6 },
+      { date: "Apr 5",  co2e: 0.8, energy: 3.2 },
+    ],
+    radar: [
+      { metric: "Carbon Eff.", score: 84 },
+      { metric: "Budget Adh.", score: 92 },
+      { metric: "Offset Cov.", score: 71 },
+      { metric: "Opt. Adopt.", score: 88 },
+      { metric: "Trend",       score: 79 },
+    ],
   },
 
   {
@@ -237,6 +309,30 @@ export const DUMMY_AGENTS: DummyAgent[] = [
           { model: "claude-opus-4-6", tier: "heavy", energy_wh: 4.56 },
         ],
       },
+    ],
+    receipts: [
+      { id: "da-r1", timestamp: hoursAgo(0.3), model: "claude-haiku-4-5", prompt_preview: "Calculate month-over-month revenue growth from this CSV", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 } },
+      { id: "da-r2", timestamp: hoursAgo(1.7), model: "claude-3-5-sonnet", prompt_preview: "Detect anomalies in 90-day transaction dataset", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "da-r3", timestamp: hoursAgo(3.5), model: "claude-haiku-4-5", prompt_preview: "Format these 200 rows as a markdown table", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 } },
+      { id: "da-r4", timestamp: hoursAgo(7.2), model: "claude-haiku-4-5", requested_model: "claude-3-5-sonnet", prompt_preview: "What is the sum of column B?", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 }, comparison: { savings_pct: 88 } },
+      { id: "da-r5", timestamp: hoursAgo(14.8), model: "claude-opus-4-6", prompt_preview: "Build a predictive model for Q3 churn based on usage data", environmental_cost: { co2e_g: 1.14, energy_wh: 4.56 } },
+      { id: "da-r6", timestamp: hoursAgo(22.0), model: "claude-haiku-4-5", prompt_preview: "Count unique values in user_id column", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 } },
+    ],
+    emissions: [
+      { date: "Mar 30", co2e: 1.1, energy: 4.4 },
+      { date: "Mar 31", co2e: 0.9, energy: 3.6 },
+      { date: "Apr 1",  co2e: 1.4, energy: 5.6 },
+      { date: "Apr 2",  co2e: 1.2, energy: 4.8 },
+      { date: "Apr 3",  co2e: 0.8, energy: 3.2 },
+      { date: "Apr 4",  co2e: 1.6, energy: 6.4 },
+      { date: "Apr 5",  co2e: 0.9, energy: 3.6 },
+    ],
+    radar: [
+      { metric: "Carbon Eff.", score: 95 },
+      { metric: "Budget Adh.", score: 97 },
+      { metric: "Offset Cov.", score: 88 },
+      { metric: "Opt. Adopt.", score: 94 },
+      { metric: "Trend",       score: 91 },
     ],
   },
 
@@ -307,6 +403,30 @@ export const DUMMY_AGENTS: DummyAgent[] = [
           { model: "claude-3-5-sonnet", tier: "standard", energy_wh: 1.92 },
         ],
       },
+    ],
+    receipts: [
+      { id: "cw-r1", timestamp: hoursAgo(1.1), model: "claude-haiku-4-5", requested_model: "claude-opus-4-6", prompt_preview: "Write a catchy subject line for our newsletter", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 }, comparison: { savings_pct: 95 } },
+      { id: "cw-r2", timestamp: hoursAgo(2.6), model: "claude-3-5-sonnet", prompt_preview: "Write a 1500-word technical blog post on WebAssembly", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "cw-r3", timestamp: hoursAgo(4.9), model: "claude-3-5-sonnet", prompt_preview: "Fix the typo in this sentence", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "cw-r4", timestamp: hoursAgo(9.3), model: "claude-3-5-sonnet", prompt_preview: "Generate 10 social media post variations for product launch", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "cw-r5", timestamp: hoursAgo(18.7), model: "claude-3-5-sonnet", prompt_preview: "Suggest a synonym for 'utilize'", environmental_cost: { co2e_g: 0.48, energy_wh: 1.92 } },
+      { id: "cw-r6", timestamp: hoursAgo(26.0), model: "claude-haiku-4-5", requested_model: "claude-opus-4-6", prompt_preview: "Add a comma after 'however' in paragraph 3", environmental_cost: { co2e_g: 0.06, energy_wh: 0.24 }, comparison: { savings_pct: 95 } },
+    ],
+    emissions: [
+      { date: "Mar 30", co2e: 5.2, energy: 20.8 },
+      { date: "Mar 31", co2e: 7.8, energy: 31.2 },
+      { date: "Apr 1",  co2e: 4.1, energy: 16.4 },
+      { date: "Apr 2",  co2e: 6.9, energy: 27.6 },
+      { date: "Apr 3",  co2e: 8.4, energy: 33.6 },
+      { date: "Apr 4",  co2e: 5.6, energy: 22.4 },
+      { date: "Apr 5",  co2e: 3.2, energy: 12.8 },
+    ],
+    radar: [
+      { metric: "Carbon Eff.", score: 52 },
+      { metric: "Budget Adh.", score: 48 },
+      { metric: "Offset Cov.", score: 61 },
+      { metric: "Opt. Adopt.", score: 55 },
+      { metric: "Trend",       score: 44 },
     ],
   },
 ];

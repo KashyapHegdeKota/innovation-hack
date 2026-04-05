@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import EmissionsChart from "@/components/EmissionsChart";
 import { getAgentScore, listReceipts } from "@/lib/greenledger-api";
+import { DUMMY_AGENTS } from "@/lib/dummy-agents";
 
 function getGrade(s: number) {
   if (s >= 90) return "A+";
@@ -62,11 +63,32 @@ export default function AgentDetailPage() {
   const [agent, setAgent] = useState<any | null>(null);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [emissionsData, setEmissionsData] = useState<any[]>([]);
+  const [radarData, setRadarData] = useState<{ metric: string; score: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+
+      // Short-circuit: use hardcoded dummy data if this is a demo agent
+      const dummy = DUMMY_AGENTS.find(a => a.agent_id === id);
+      if (dummy) {
+        setAgent({
+          agent_id:             dummy.agent_id,
+          display_name:         dummy.display_name,
+          sustainability_score: dummy.sustainability_score,
+          total_inferences:     dummy.total_inferences,
+          total_co2e_g:         dummy.total_co2e_g,
+          total_energy_wh:      dummy.total_energy_wh,
+          wallet_utilization_pct: dummy.wallet_utilization_pct,
+        });
+        setReceipts(dummy.receipts);
+        setEmissionsData(dummy.emissions);
+        setRadarData(dummy.radar);
+        setLoading(false);
+        return;
+      }
+
       try {
         const [agentRes, receiptsRes] = await Promise.all([
           getAgentScore(id),
@@ -125,12 +147,13 @@ export default function AgentDetailPage() {
   const walletPct = agent.wallet_utilization_pct;
   const walletColor = walletPct >= 80 ? "#f87171" : walletPct >= 50 ? "#f59e0b" : "#22c55e";
 
-  const radarData = [
+  // Use dummy radar if available, otherwise derive from score
+  const activeRadar = radarData.length > 0 ? radarData : [
     { metric: "Carbon Eff.", score: Math.min(100, score + 10) },
     { metric: "Budget Adh.", score: Math.min(100, score + 5) },
     { metric: "Offset Cov.", score: Math.max(0, score - 5) },
     { metric: "Opt. Adopt.", score },
-    { metric: "Trend", score: Math.min(100, score + 8) },
+    { metric: "Trend",       score: Math.min(100, score + 8) },
   ];
 
   const metrics = [
@@ -216,7 +239,7 @@ export default function AgentDetailPage() {
           {/* Radar */}
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="72%">
+              <RadarChart data={activeRadar} cx="50%" cy="50%" outerRadius="72%">
                 <PolarGrid stroke="var(--rule)" />
                 <PolarAngleAxis dataKey="metric" tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }} />
                 <Radar dataKey="score" stroke={scoreColor} fill={scoreColor} fillOpacity={0.15} strokeWidth={1.5} />
