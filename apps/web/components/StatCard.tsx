@@ -1,6 +1,7 @@
 "use client";
 
-import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { motion } from "framer-motion";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
@@ -17,51 +18,80 @@ export default function StatCard({ label, value, unit, icon: Icon, trend, trendI
   const isPositive = trendInverted ? (trend ?? 0) < 0 : (trend ?? 0) > 0;
 
   return (
-    <div
-      className="relative rounded-xl p-5 border glow-hover overflow-hidden"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
+    <motion.div
+      whileHover={{ y: -1, transition: { duration: 0.15 } }}
+      className="relative rounded-xl p-5 cursor-default transition-colors duration-150"
+      style={{
+        backgroundColor: "var(--bg-card)",
+        border: `1px solid ${accent ? "rgba(34,197,94,0.18)" : "var(--border)"}`,
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = accent ? "rgba(34,197,94,0.3)" : "var(--border-bright)")}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = accent ? "rgba(34,197,94,0.18)" : "var(--border)")}
     >
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent)" }} />
-
+      {/* Icon + label row */}
       <div className="flex items-center justify-between mb-4">
-        <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-          {label}
-        </span>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.15)" }}>
-          <Icon className="w-3.5 h-3.5" style={{ color: "var(--green-accent)" }} />
+        <span className="label">{label}</span>
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{
+            backgroundColor: accent ? "rgba(34,197,94,0.08)" : "var(--bg-card-hover)",
+            border: `1px solid ${accent ? "rgba(34,197,94,0.15)" : "var(--border-bright)"}`,
+          }}
+        >
+          <Icon
+            className="w-3.5 h-3.5"
+            style={{ color: accent ? "var(--green-accent)" : "var(--text-muted)" }}
+          />
         </div>
       </div>
 
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-2xl font-bold font-mono gradient-text">
+      {/* Value */}
+      <div className="flex items-baseline gap-1.5 data-flicker">
+        <span
+          className="font-black leading-none"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "clamp(1.4rem, 2vw, 1.75rem)",
+            letterSpacing: "-0.05em",
+            color: accent ? "var(--green-accent)" : "var(--text-primary)",
+          }}
+        >
           {value}
         </span>
         {unit && (
-          <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+          <span
+            className="text-xs font-medium"
+            style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+          >
             {unit}
           </span>
         )}
       </div>
 
+      {/* Trend */}
       {trend !== undefined && (
-        <div className="flex items-center gap-1 mt-2.5">
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md"
-            style={{ backgroundColor: trend === 0 ? "rgba(90,107,89,0.15)" : isPositive ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)" }}>
-            {trend === 0
-              ? <Minus className="w-2.5 h-2.5" style={{ color: "var(--text-muted)" }} />
-              : isPositive
+        <div className="flex items-center gap-1 mt-3">
+          <div
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+            style={{
+              backgroundColor: isPositive ? "rgba(34,197,94,0.08)" : "rgba(248,113,113,0.08)",
+            }}
+          >
+            {isPositive
               ? <TrendingUp className="w-2.5 h-2.5" style={{ color: "var(--green-accent)" }} />
               : <TrendingDown className="w-2.5 h-2.5" style={{ color: "var(--red-accent)" }} />}
-            <span className="text-[10px] font-semibold"
-              style={{ color: trend === 0 ? "var(--text-muted)" : isPositive ? "var(--green-accent)" : "var(--red-accent)" }}>
-              {Math.abs(trend).toFixed(1)}% vs last period
+            <span
+              className="text-[9px] font-semibold"
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: isPositive ? "var(--green-accent)" : "var(--red-accent)",
+              }}
+            >
+              {Math.abs(trend).toFixed(1)}%
             </span>
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

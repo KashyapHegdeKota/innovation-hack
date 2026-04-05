@@ -2,101 +2,224 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────
+   DESIGN SYSTEM — Premium B2B Climate-Tech
+   Inspired by: Vercel, Linear, Stripe, Apple
+   Philosophy: Confident restraint. Every pixel earns its place.
+───────────────────────────────────────────────────────────── */
+
 :root {
-  --bg-primary: #080d0b;
-  --bg-secondary: #0d1410;
-  --bg-card: #111916;
-  --bg-card-hover: #161f1b;
-  --border: #1a2b22;
-  --border-bright: #243d2e;
-  --text-primary: #e8efe9;
-  --text-secondary: #8fa898;
-  --text-muted: #4d6b59;
-  --green-accent: #22c55e;
-  --green-dim: #166534;
-  --green-glow: rgba(34, 197, 94, 0.15);
-  --red-accent: #ef4444;
-  --amber-accent: #f59e0b;
-  --blue-accent: #3b82f6;
+  /* ── Backgrounds ──────────────────────────────────────────── */
+  --bg-primary:    #080808;   /* page base             */
+  --bg-secondary:  #0f0f0f;   /* subtle separation     */
+  --bg-card:       #111111;   /* card surface          */
+  --bg-card-hover: #161616;   /* card hover / elevated */
+  --bg-raised:     #1a1a1a;   /* tooltips, menus       */
+
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border:        #1e1e1e;   /* default               */
+  --border-bright: #2a2a2a;   /* slightly more visible */
+  --border-accent: rgba(34, 197, 94, 0.2);
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --text-primary:  #ededed;
+  --text-secondary:#a1a1a1;
+  --text-muted:    #525252;
+
+  /* ── Accent: green — used sparingly ──────────────────────── */
+  --green-accent:  #22c55e;
+  --green-bright:  #4ade80;
+  --green-dim:     #14532d;
+  --green-glow:    rgba(34, 197, 94, 0.1);
+
+  /* ── Semantic colors ──────────────────────────────────────── */
+  --red-accent:    #f87171;
+  --amber-accent:  #f59e0b;
+  --blue-accent:   #60a5fa;
+
+  /* ── Fonts ────────────────────────────────────────────────── */
+  --font-display:    var(--font-syne),   "Helvetica Neue", sans-serif;
+  --font-condensed:  var(--font-bebas),  "Impact", sans-serif;
+  --font-mono:       var(--font-jetbrains), "Courier New", monospace;
 }
 
+/* ─── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ─── Body ────────────────────────────────────────────────────── */
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "Inter", sans-serif;
-  /* Subtle dot grid */
-  background-image: radial-gradient(circle, #1a2b22 1px, transparent 1px);
+  font-family: var(--font-display);
+  /* Very subtle neutral grid — like graph paper */
+  background-image: radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px);
   background-size: 28px 28px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glass card */
+/* ─── Typography ──────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.font-mono { font-family: var(--font-mono) !important; }
+
+/* ─── Glass sidebar ───────────────────────────────────────────── */
 .glass {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(17, 25, 22, 0.85);
-  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
 }
 
-/* Glow on hover */
+/* ─── Card ────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* ─── Subtle hover lift ───────────────────────────────────────── */
 .glow-hover {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s, background-color 0.2s, transform 0.2s;
 }
 .glow-hover:hover {
-  border-color: rgba(34, 197, 94, 0.35) !important;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.08), inset 0 0 20px rgba(34, 197, 94, 0.03);
+  border-color: var(--border-bright) !important;
+  background-color: var(--bg-card-hover) !important;
+  transform: translateY(-1px);
 }
 
-/* Green glow for accent elements */
-.green-glow {
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
-}
-
-/* Animated gradient text */
+/* ─── Text utilities ──────────────────────────────────────────── */
 .gradient-text {
-  background: linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #86efac 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #4ade80 60%, #86efac 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Subtle top accent line on cards */
-.card-accent::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.4), transparent);
+.label {
+  font-family: var(--font-mono) !important;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
 }
 
-/* Stat number glow */
-.stat-value {
-  text-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
-}
-
-/* Sidebar active glow */
+/* ─── Nav ─────────────────────────────────────────────────────── */
 .nav-active {
-  background: linear-gradient(90deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.04));
+  color: var(--text-primary) !important;
+  background-color: var(--bg-card-hover);
   border-left: 2px solid var(--green-accent);
-  box-shadow: inset 0 0 20px rgba(34, 197, 94, 0.05);
 }
 
-/* Pulse animation for live indicator */
+/* ─── Animations ──────────────────────────────────────────────── */
+
+/* Live indicator */
 @keyframes pulse-green {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50%       { opacity: 0.25; }
 }
-.pulse-live {
-  animation: pulse-green 2s ease-in-out infinite;
+.pulse-live { animation: pulse-green 2s ease-in-out infinite; }
+
+/* Data numbers — very subtle, barely perceptible */
+@keyframes flicker {
+  0%, 97%, 100% { opacity: 1; }
+  98%            { opacity: 0.88; }
+}
+.data-flicker { animation: flicker 12s ease-in-out infinite; }
+
+/* Staggered entrance */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up   { animation: fadeUp 0.5s ease both; }
+.fade-up-1 { animation: fadeUp 0.5s 0.06s ease both; }
+.fade-up-2 { animation: fadeUp 0.5s 0.12s ease both; }
+.fade-up-3 { animation: fadeUp 0.5s 0.18s ease both; }
+.fade-up-4 { animation: fadeUp 0.5s 0.24s ease both; }
+.fade-up-5 { animation: fadeUp 0.5s 0.30s ease both; }
+.fade-up-6 { animation: fadeUp 0.5s 0.36s ease both; }
+
+/* Path animation for routing flow */
+@keyframes flowDash {
+  from { stroke-dashoffset: 120; }
+  to   { stroke-dashoffset: 0; }
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
+/* Border glow for active states */
+@keyframes borderPulse {
+  0%, 100% { border-color: var(--border); }
+  50%       { border-color: rgba(34,197,94,0.25); }
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+
+/* ─── Landing-specific ────────────────────────────────────────── */
+
+/* Topographic elevation rings */
+.topo-bg {
+  background-image:
+    repeating-radial-gradient(
+      circle at 72% 38%,
+      transparent 0, transparent 34px,
+      rgba(34,197,94,0.028) 35px, rgba(34,197,94,0.028) 36px
+    ),
+    repeating-radial-gradient(
+      circle at 28% 62%,
+      transparent 0, transparent 26px,
+      rgba(34,197,94,0.018) 27px, rgba(34,197,94,0.018) 28px
+    ),
+    repeating-radial-gradient(
+      circle at 55% 20%,
+      transparent 0, transparent 44px,
+      rgba(34,197,94,0.012) 45px, rgba(34,197,94,0.012) 46px
+    );
+}
+
+/* Infinite ticker scroll */
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track {
+  animation: tickerScroll 28s linear infinite;
+  display: flex;
+  width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+
+/* Scan line for live counter */
+@keyframes scanLine {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Counter reveal */
+@keyframes counterReveal {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.counter-reveal { animation: counterReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Fade in from bottom on scroll */
+@keyframes scrollReveal {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Warm amber for the problem */
+.text-amber { color: #d97706; }
+.bg-amber   { background-color: rgba(217, 119, 6, 0.08); }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+  .font-condensed { font-family: var(--font-condensed) !important; }
 }

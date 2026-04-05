@@ -7,7 +7,7 @@ interface SustainabilityGaugeProps {
 }
 
 export default function SustainabilityGauge({ score, previousScore, size = 180 }: SustainabilityGaugeProps) {
-  const radius = (size - 20) / 2;
+  const radius = (size - 24) / 2;
   const circumference = Math.PI * radius;
   const progress = (score / 100) * circumference;
   const center = size / 2;
@@ -15,13 +15,16 @@ export default function SustainabilityGauge({ score, previousScore, size = 180 }
   const getColor = (s: number) => {
     if (s >= 75) return "#22c55e";
     if (s >= 50) return "#f59e0b";
-    return "#ef4444";
+    return "#f87171";
   };
 
-  const getGlow = (s: number) => {
-    if (s >= 75) return "rgba(34,197,94,0.6)";
-    if (s >= 50) return "rgba(245,158,11,0.6)";
-    return "rgba(239,68,68,0.6)";
+  const getGrade = (s: number) => {
+    if (s >= 90) return "A+";
+    if (s >= 80) return "A";
+    if (s >= 70) return "B";
+    if (s >= 55) return "C";
+    if (s >= 40) return "D";
+    return "F";
   };
 
   const getLabel = (s: number) => {
@@ -32,70 +35,105 @@ export default function SustainabilityGauge({ score, previousScore, size = 180 }
     return "Critical";
   };
 
-  const color = getColor(score);
-  const glowColor = getGlow(score);
+  const color  = getColor(score);
+  const grade  = getGrade(score);
   const change = previousScore != null ? score - previousScore : null;
-  const filterId = "gauge-glow";
+
+  /* Tick marks at every 10%, inward */
+  const getArcPoint = (t: number, r: number) => {
+    const angle = Math.PI * (1 - t);
+    return { x: center + r * Math.cos(angle), y: center - r * Math.sin(angle) };
+  };
+
+  const ticks = Array.from({ length: 11 }, (_, i) => {
+    const t = i / 10;
+    const isMajor = i % 5 === 0;
+    return {
+      outer: getArcPoint(t, radius),
+      inner: getArcPoint(t, radius - (isMajor ? 9 : 5)),
+      isMajor,
+    };
+  });
+
+  const svgH = size / 2 + 36;
 
   return (
-    <div className="relative rounded-xl border glow-hover overflow-hidden flex flex-col items-center p-6"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+    <div
+      className="relative rounded-xl flex flex-col items-center justify-center p-5 h-full transition-colors duration-150"
+      style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border-bright)")}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+    >
+      <span className="label mb-3">Sustainability Score</span>
 
-      {/* Top accent */}
-      <div className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${glowColor.replace("0.6", "0.5")}, transparent)` }} />
-
-      <h3 className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
-        Sustainability Score
-      </h3>
-
-      <svg width={size} height={size / 2 + 30} viewBox={`0 0 ${size} ${size / 2 + 30}`}>
+      <svg width={size} height={svgH} viewBox={`0 0 ${size} ${svgH}`}>
         <defs>
-          <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
           <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={color} stopOpacity={0.6} />
-            <stop offset="100%" stopColor={color} />
+            <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+            <stop offset="100%" stopColor={color} stopOpacity={1} />
           </linearGradient>
         </defs>
 
         {/* Track */}
-        <path d={`M 10 ${center} A ${radius} ${radius} 0 0 1 ${size - 10} ${center}`}
-          fill="none" stroke="var(--border)" strokeWidth="8" strokeLinecap="round" />
+        <path
+          d={`M 12 ${center} A ${radius} ${radius} 0 0 1 ${size - 12} ${center}`}
+          fill="none" stroke="var(--border-bright)" strokeWidth="6" strokeLinecap="round"
+        />
 
-        {/* Progress with glow */}
-        <path d={`M 10 ${center} A ${radius} ${radius} 0 0 1 ${size - 10} ${center}`}
-          fill="none" stroke={glowColor} strokeWidth="12" strokeLinecap="round"
+        {/* Progress */}
+        <path
+          d={`M 12 ${center} A ${radius} ${radius} 0 0 1 ${size - 12} ${center}`}
+          fill="none" stroke="url(#gaugeGrad)" strokeWidth="6" strokeLinecap="round"
           strokeDasharray={`${progress} ${circumference}`}
-          style={{ transition: "stroke-dasharray 1.2s ease-in-out", filter: `blur(4px)` }}
-          opacity={0.4} />
-        <path d={`M 10 ${center} A ${radius} ${radius} 0 0 1 ${size - 10} ${center}`}
-          fill="none" stroke="url(#gaugeGrad)" strokeWidth="8" strokeLinecap="round"
-          strokeDasharray={`${progress} ${circumference}`}
-          style={{ transition: "stroke-dasharray 1.2s ease-in-out" }} />
+          style={{ transition: "stroke-dasharray 1.2s cubic-bezier(0.4,0,0.2,1)" }}
+        />
+
+        {/* Tick marks */}
+        {ticks.map((tick, i) => (
+          <line
+            key={i}
+            x1={tick.outer.x} y1={tick.outer.y}
+            x2={tick.inner.x} y2={tick.inner.y}
+            stroke={tick.isMajor ? "#2a2a2a" : "#1e1e1e"}
+            strokeWidth={tick.isMajor ? 1.5 : 1}
+            strokeLinecap="round"
+          />
+        ))}
 
         {/* Score */}
-        <text x={center} y={center - 8} textAnchor="middle" className="font-mono font-bold"
-          style={{ fill: "var(--text-primary)", fontSize: "34px", fontWeight: 800 }}>
+        <text
+          x={center} y={center - 8}
+          textAnchor="middle"
+          style={{ fill: "var(--text-primary)", fontSize: "40px", fontWeight: 800, fontFamily: "var(--font-mono)", letterSpacing: "-0.04em" }}
+        >
           {score}
         </text>
-        <text x={center} y={center + 14} textAnchor="middle"
-          style={{ fill: color, fontSize: "11px", fontWeight: 600, letterSpacing: "0.05em" }}>
-          {getLabel(score)}
+
+        {/* Grade · Label */}
+        <text
+          x={center} y={center + 15}
+          textAnchor="middle"
+          style={{ fill: color, fontSize: "12px", fontWeight: 600, fontFamily: "var(--font-display)" }}
+        >
+          {grade} · {getLabel(score)}
         </text>
       </svg>
 
       {change !== null && (
-        <div className="flex items-center gap-1.5 mt-1 px-2.5 py-1 rounded-full"
-          style={{ backgroundColor: change >= 0 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)" }}>
-          <span className="text-xs font-semibold" style={{ color: change >= 0 ? "var(--green-accent)" : "var(--red-accent)" }}>
-            {change >= 0 ? "+" : ""}{change} from last period
+        <div
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full mt-1"
+          style={{
+            backgroundColor: change >= 0 ? "rgba(34,197,94,0.07)" : "rgba(248,113,113,0.07)",
+            border: `1px solid ${change >= 0 ? "rgba(34,197,94,0.15)" : "rgba(248,113,113,0.15)"}`,
+          }}
+        >
+          <span
+            className="text-xs font-medium"
+            style={{ color: change >= 0 ? "var(--green-accent)" : "var(--red-accent)", fontFamily: "var(--font-mono)" }}
+          >
+            {change >= 0 ? "+" : ""}{change} pts
           </span>
+          <span className="label">vs last period</span>
         </div>
       )}
     </div>
