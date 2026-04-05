@@ -26,25 +26,36 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-5 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{
-              backgroundColor: "rgba(34,197,94,0.1)",
-              border: "1px solid rgba(34,197,94,0.18)",
-            }}
-          >
-            <Leaf className="w-3.5 h-3.5" style={{ color: "var(--green-accent)" }} />
-          </div>
-          <div>
+        <div className="flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+              style={{
+                backgroundColor: "rgba(34,197,94,0.1)",
+                border: "1px solid rgba(34,197,94,0.18)",
+              }}
+            >
+              <Leaf className="w-3.5 h-3.5" style={{ color: "var(--green-accent)" }} />
+            </div>
             <span
               className="text-sm font-bold"
               style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}
             >
               GreenLedger
             </span>
-          </div>
-        </Link>
+          </Link>
+
+          <button
+            onClick={toggleTheme}
+            className="w-7 h-7 rounded-md flex items-center justify-center transition-colors duration-100"
+            style={{ color: "var(--text-muted)" }}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-card-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+          >
+            {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
       {/* Section label */}
@@ -92,24 +103,6 @@ export default function Sidebar() {
 
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--border)" }}>
-        {/* Theme toggle */}
-        <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md transition-colors duration-100"
-            style={{ color: "var(--text-muted)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-card-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
-          >
-            {theme === "dark"
-              ? <Sun className="w-3.5 h-3.5" />
-              : <Moon className="w-3.5 h-3.5" />}
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </span>
-          </button>
-        </div>
-
         <div className="px-5 py-4">
           {user && (
             <div className="flex items-center gap-2.5">
