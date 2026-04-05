@@ -32,7 +32,7 @@ export default function DashboardPage() {
         const [dashRes, scoreRes, receiptsRes] = await Promise.all([
           getDashboardSummary(),
           getOrgScore(),
-          listReceipts({ limit: 500 }),
+          listReceipts({ limit: 200 }),
         ]);
         setSummary(dashRes.data);
         setScore(scoreRes.data);
