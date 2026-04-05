@@ -342,8 +342,8 @@ function Nav({ user }: { user: any }) {
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        borderBottom: scrolled ? `1px solid ${C.border}` : "1px solid transparent",
-        backgroundColor: scrolled ? C.navBg : "transparent",
+        borderBottom: scrolled ? "1px solid var(--border)" : "1px solid transparent",
+        backgroundColor: scrolled ? "var(--bg-primary)" : "transparent",
         backdropFilter: scrolled ? "blur(24px)" : "none",
       }}
     >
