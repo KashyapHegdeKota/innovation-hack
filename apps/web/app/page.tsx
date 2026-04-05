@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { ArrowRight, ArrowUpRight, Leaf, Check, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Leaf } from "lucide-react";
+import {
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine, Legend,
+} from "recharts";
 
 /* ── Live CO₂ counter ──────────────────────────────────────────── */
 // ~5 billion AI queries/day globally × avg 0.4g CO2 = ~2,000,000g/day
@@ -101,21 +105,196 @@ const FEATURES = [
   },
 ];
 
-const WITHOUT = [
-  "Teams pick AI models based on habit, not efficiency",
-  "No visibility into carbon footprint per request",
-  "Flagship models used for trivial tasks",
-  "Zero audit trail for AI infrastructure decisions",
-  "ESG reports built from estimates and guesswork",
+
+/* ── Carbon pathways chart data ────────────────────────────────── */
+// Historical: Global Carbon Project. Scenarios: CICERO/IPCC SSP adaptations.
+const CARBON_DATA = [
+  { year: 1980, historical: 22.5 },
+  { year: 1985, historical: 23.8 },
+  { year: 1990, historical: 26.1 },
+  { year: 1995, historical: 27.4 },
+  { year: 2000, historical: 29.2 },
+  { year: 2005, historical: 32.8 },
+  { year: 2010, historical: 35.6 },
+  { year: 2015, historical: 38.2 },
+  { year: 2020, historical: 41.8, path15: 41.8, path20: 41.8, path30: 41.8 },
+  { year: 2025, path15: 36.0, path20: 39.5, path30: 43.2, removal15: -1.0, removal20: -0.4 },
+  { year: 2030, path15: 28.0, path20: 35.0, path30: 44.8, removal15: -2.5, removal20: -0.9 },
+  { year: 2035, path15: 19.0, path20: 29.5, path30: 45.5, removal15: -4.2, removal20: -1.6 },
+  { year: 2040, path15: 10.5, path20: 23.0, path30: 45.8, removal15: -5.8, removal20: -2.4 },
+  { year: 2045, path15: 3.5,  path20: 16.0, path30: 45.5, removal15: -7.0, removal20: -3.2 },
+  { year: 2050, path15: -1.5, path20: 9.0,  path30: 44.8, removal15: -8.0, removal20: -4.0 },
+  { year: 2055, path15: -4.5, path20: 3.5,  path30: 43.2, removal15: -8.8, removal20: -4.8 },
+  { year: 2060, path15: -6.5, path20: -1.0, path30: 41.5, removal15: -9.4, removal20: -5.5 },
+  { year: 2065, path15: -7.8, path20: -4.0, path30: 39.5, removal15: -9.8, removal20: -6.2 },
+  { year: 2070, path15: -8.8, path20: -6.5, path30: 37.5, removal15: -10.0, removal20: -6.8 },
+  { year: 2075, path15: -9.5, path20: -8.5, path30: 35.0, removal15: -10.2, removal20: -7.2 },
+  { year: 2080, path15: -10.0, path20: -9.8, path30: 32.0, removal15: -10.3, removal20: -7.5 },
+  { year: 2085, path15: -10.4, path20: -10.5, path30: 29.0, removal15: -10.3, removal20: -7.8 },
+  { year: 2090, path15: -10.6, path20: -10.8, path30: 26.0, removal15: -10.2, removal20: -8.0 },
+  { year: 2095, path15: -10.7, path20: -11.0, path30: 23.5, removal15: -10.1, removal20: -8.1 },
+  { year: 2100, path15: -10.8, path20: -11.2, path30: 21.5, removal15: -10.0, removal20: -8.2 },
 ];
 
-const WITH = [
-  "Automatic routing to most efficient qualified model",
-  "Real-time CO₂ accounting for every single inference",
-  "Complexity-matched routing — ~23% cost reduction",
-  "Full request log with routing rationale",
-  "Accurate, auditable environmental reporting",
-];
+type Scenario = "1.5" | "2" | "3";
+
+const SCENARIO_CONFIG: Record<Scenario, { label: string; pathKey: string; color: string; desc: string }> = {
+  "1.5": { label: "~1.5°C",       pathKey: "path15", color: "#3b82f6", desc: "Aggressive immediate cuts + large-scale carbon removal" },
+  "2":   { label: "~2°C",         pathKey: "path20", color: "#8b5cf6", desc: "Gradual reduction over 30 years, moderate removal" },
+  "3":   { label: "~3°C (Current path)", pathKey: "path30", color: "#9ca3af", desc: "Business as usual — catastrophic by end of century" },
+};
+
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      backgroundColor: "#0d0d0d",
+      border: "1px solid #2a2a2a",
+      borderRadius: "6px",
+      padding: "10px 14px",
+      fontFamily: "var(--font-mono)",
+      fontSize: "11px",
+    }}>
+      <p style={{ color: "#525252", marginBottom: "6px", fontSize: "10px" }}>{label}</p>
+      {payload.map((p: any) => (
+        p.value != null && (
+          <p key={p.dataKey} style={{ color: p.color, margin: "2px 0" }}>
+            {p.name}: <span style={{ color: "#f0ece4" }}>{Number(p.value).toFixed(1)} GtCO₂/yr</span>
+          </p>
+        )
+      ))}
+    </div>
+  );
+}
+
+function CarbonChart() {
+  const [scenario, setScenario] = useState<Scenario>("1.5");
+  const cfg = SCENARIO_CONFIG[scenario];
+
+  return (
+    <div style={{ backgroundColor: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "12px", padding: "2rem" }}>
+      {/* Controls */}
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "#525252", whiteSpace: "nowrap" }}>
+          Limit global temperature increase to:
+        </span>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {(["1.5", "2", "3"] as Scenario[]).map(s => (
+            <button
+              key={s}
+              onClick={() => setScenario(s)}
+              style={{
+                padding: "4px 12px",
+                borderRadius: "20px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                border: scenario === s ? "none" : "1px solid #2a2a2a",
+                backgroundColor: scenario === s ? SCENARIO_CONFIG[s].color : "transparent",
+                color: scenario === s ? "#fff" : "#525252",
+              }}
+            >
+              {SCENARIO_CONFIG[s].label}
+            </button>
+          ))}
+        </div>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#3a3a3a", marginLeft: "auto" }}>
+          {cfg.desc}
+        </span>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: "1.5rem", marginBottom: "1rem" }}>
+        {[
+          { color: "#f0ece4", dash: false, label: "Historical emissions" },
+          { color: cfg.color, dash: true,  label: `${cfg.label} path` },
+          { color: "#6366f1", dash: false, label: "Carbon removal" },
+        ].map(l => (
+          <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <svg width="20" height="8">
+              <line
+                x1="0" y1="4" x2="20" y2="4"
+                stroke={l.color} strokeWidth="2"
+                strokeDasharray={l.dash ? "4 3" : "none"}
+              />
+            </svg>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#525252", letterSpacing: "0.06em" }}>
+              {l.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <ResponsiveContainer width="100%" height={360}>
+        <ComposedChart data={CARBON_DATA} margin={{ top: 10, right: 20, bottom: 20, left: 20 }}>
+          <CartesianGrid stroke="#1a1a1a" strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="year"
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "#525252" }}
+            axisLine={{ stroke: "#2a2a2a" }}
+            tickLine={false}
+            label={{ value: "YEAR", position: "insideBottom", offset: -10, style: { fontFamily: "var(--font-mono)", fontSize: 9, fill: "#3a3a3a", letterSpacing: "0.12em" } }}
+          />
+          <YAxis
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "#525252" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={v => `${v}`}
+            label={{ value: "NET CO₂ (GtCO₂/YR)", angle: -90, position: "insideLeft", offset: -8, style: { fontFamily: "var(--font-mono)", fontSize: 9, fill: "#3a3a3a", letterSpacing: "0.08em" } }}
+            domain={[-20, 55]}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <ReferenceLine y={0} stroke="#2a2a2a" strokeWidth={1} />
+          <ReferenceLine x={2020} stroke="#3a3a3a" strokeWidth={1} strokeDasharray="4 3" />
+
+          {/* Carbon removal area */}
+          {scenario !== "3" && (
+            <Area
+              dataKey={scenario === "1.5" ? "removal15" : "removal20"}
+              name="Carbon removal"
+              fill="rgba(99,102,241,0.12)"
+              stroke="none"
+              connectNulls
+              isAnimationActive
+            />
+          )}
+
+          {/* Historical solid line */}
+          <Line
+            dataKey="historical"
+            name="Historical"
+            stroke="#f0ece4"
+            strokeWidth={2}
+            dot={false}
+            connectNulls
+            isAnimationActive
+          />
+
+          {/* Scenario path dashed */}
+          <Line
+            dataKey={cfg.pathKey}
+            name={cfg.label}
+            stroke={cfg.color}
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            dot={false}
+            connectNulls
+            isAnimationActive
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+
+      {/* Bottom note */}
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2a2a2a", marginTop: "1rem", lineHeight: 1.6 }}>
+        Historical emissions via Global Carbon Project. Current path shows SSP4-6.0. Removal pathways adapted from CICERO/IPCC AR6.
+        GreenLedger targets the carbon removal gap — every inference offset, every model decision optimised.
+      </p>
+    </div>
+  );
+}
 
 /* ── Nav ───────────────────────────────────────────────────────── */
 function Nav({ user }: { user: any }) {
@@ -472,58 +651,25 @@ export default function LandingPage() {
       </section>
 
       {/* ══════════════════════════════════════════════════════
-          WITHOUT / WITH
+          THE STAKES — interactive carbon pathways chart
       ══════════════════════════════════════════════════════ */}
       <section className="py-24 px-6" style={{ backgroundColor: "#060808", borderTop: "1px solid #111" }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-12">
-            <p className="label mb-3" style={{ color: "#3a3a3a" }}>Why it matters</p>
+            <p className="label mb-3" style={{ color: "#3a3a3a" }}>The stakes</p>
             <h2
               className="font-black"
               style={{ fontSize: "clamp(2rem, 4vw, 3.2rem)", letterSpacing: "-0.04em" }}
             >
-              One integration.
-              <span style={{ color: "#3a3a3a" }}> Everything changes.</span>
+              The path we take
+              <span style={{ color: "#3a3a3a" }}> depends on removal.</span>
             </h2>
+            <p className="text-sm mt-4" style={{ color: "#525252", maxWidth: "36rem" }}>
+              Every tonne of CO₂ that doesn&apos;t get removed is a debt on the 1.5°C budget.
+              GreenLedger routes every AI inference levy directly to verified carbon removal via Stripe Climate.
+            </p>
           </div>
-
-          <div className="grid grid-cols-2 rounded-xl overflow-hidden" style={{ border: "1px solid #1a1a1a" }}>
-            {/* Without */}
-            <div className="p-8" style={{ borderRight: "1px solid #1a1a1a" }}>
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-5 h-5 rounded flex items-center justify-center" style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                  <X className="w-3 h-3" style={{ color: "#f87171" }} />
-                </div>
-                <span className="text-sm font-medium" style={{ color: "#525252" }}>Without GreenLedger</span>
-              </div>
-              <ul className="space-y-4">
-                {WITHOUT.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <X className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "rgba(239,68,68,0.3)" }} />
-                    <span className="text-sm" style={{ color: "#3a3a3a" }}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* With */}
-            <div className="p-8" style={{ backgroundColor: "#0a0f0a" }}>
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-5 h-5 rounded flex items-center justify-center" style={{ backgroundColor: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)" }}>
-                  <Check className="w-3 h-3" style={{ color: "#22c55e" }} />
-                </div>
-                <span className="text-sm font-medium" style={{ color: "#a1a1a1" }}>With GreenLedger</span>
-              </div>
-              <ul className="space-y-4">
-                {WITH.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#22c55e" }} />
-                    <span className="text-sm" style={{ color: "#8a8a8a" }}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          <CarbonChart />
         </div>
       </section>
 
