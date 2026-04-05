@@ -285,7 +285,7 @@ async def analyze_and_route(request: RoutingRequest):
     """
 
     payload = {
-        "model": "llama3.2",  # Use a small, efficient model for routing decisions
+        "model": "llama3.2:1b",  # Use a small, efficient model for routing decisions
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": request.user_prompt}
