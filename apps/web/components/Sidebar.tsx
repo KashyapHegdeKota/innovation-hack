@@ -12,7 +12,7 @@ import {
   Wallet,
   DollarSign,
 } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@auth0/nextjs-auth0/client";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -25,7 +25,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useUser();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col border-r"
@@ -75,20 +75,15 @@ export default function Sidebar() {
           <div className="flex items-center justify-between">
             <div className="truncate">
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                {user.displayName || "User"}
+                {user.name || "User"}
               </p>
               <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
                 {user.email}
               </p>
             </div>
-            <button
-              onClick={logout}
-              className="p-1.5 rounded-md hover:opacity-80 transition-opacity"
-              style={{ color: "var(--text-muted)" }}
-              title="Logout"
-            >
+            <a href = "/api/auth/logout" className="text-muted hover:text-primary transition-colors">
               <LogOut className="w-4 h-4" />
-            </button>
+            </a>
           </div>
         )}
       </div>

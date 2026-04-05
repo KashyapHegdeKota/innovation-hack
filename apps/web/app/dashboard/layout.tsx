@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import {useUser} from '@auth0/nextjs-auth0/client';
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
@@ -10,16 +10,16 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       router.push("/login");
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: "var(--bg-primary)" }}>
         <div className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</div>
