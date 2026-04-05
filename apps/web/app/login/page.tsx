@@ -3,8 +3,7 @@
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Leaf, ArrowRight } from "lucide-react";
-import { LogIn } from "lucide-react";
+import { Leaf, LogIn } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -61,16 +60,24 @@ export default function LoginPage() {
         <p className="text-sm mb-8" style={{ color: "var(--text-muted)" }}>
           Carbon-aware AI infrastructure dashboard
         </p>
-        
-        <a href="/api/auth/login" className="flex items-center gap-2 px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors">
-          <LogIn size={20} />
+
+        <a
+          href="/api/auth/login"
+          className="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-opacity hover:opacity-80"
+          style={{
+            backgroundColor: "var(--green-accent)",
+            color: "#000",
+            fontFamily: "var(--font-display)",
+          }}
+        >
+          <LogIn className="w-4 h-4" />
           Sign in with Google
         </a>
       </div>
 
       {/* Footer note */}
       <p className="mt-6 text-xs" style={{ color: "var(--text-muted)" }}>
-        Don't have access?{" "}
+        Don&apos;t have access?{" "}
         <Link
           href="/"
           className="transition-colors duration-100"

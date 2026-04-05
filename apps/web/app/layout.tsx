@@ -38,7 +38,7 @@ export default function RootLayout({
         {/* Anti-flash: apply stored theme before first paint */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('gl-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();` }} />
       </head>
-      <body className={`${syne.variable} ${jetbrainsMono.variable} ${bebasNeue.variable}`}>
+      <body className={`${syne.variable} ${jetbrainsMono.variable} ${bebasNeue.variable} antialiased`}>
         <ThemeProvider>
           <UserProvider>
             {children}

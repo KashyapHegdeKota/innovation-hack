@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Leaf, Check, X } from "lucide-react";
 import { useUser } from "@auth0/nextjs-auth0/client";
+import { ArrowRight, ArrowUpRight, Leaf, Check, X } from "lucide-react";
 
 /* ── Live CO₂ counter ──────────────────────────────────────────── */
 // ~5 billion AI queries/day globally × avg 0.4g CO2 = ~2,000,000g/day
