@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Leaf, LogOut } from "lucide-react";
+import { Leaf, LogOut, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 
 const navItems = [
   { href: "/dashboard",          label: "Overview"       },
@@ -17,6 +18,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <aside
@@ -63,8 +65,10 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-100 ${
-                isActive ? "nav-active" : "hover:bg-[#161616]"
+                isActive ? "nav-active" : ""
               }`}
+            onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-card-hover)"; }}
+            onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
               style={{
                 color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
                 fontFamily: "var(--font-display)",
@@ -88,6 +92,24 @@ export default function Sidebar() {
 
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--border)" }}>
+        {/* Theme toggle */}
+        <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md transition-colors duration-100"
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-card-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+          >
+            {theme === "dark"
+              ? <Sun className="w-3.5 h-3.5" />
+              : <Moon className="w-3.5 h-3.5" />}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              {theme === "dark" ? "Light mode" : "Dark mode"}
+            </span>
+          </button>
+        </div>
+
         <div className="px-5 py-4">
           {user && (
             <div className="flex items-center gap-2.5">

@@ -26,6 +26,12 @@
   --text-secondary:#a1a1a1;
   --text-muted:    #525252;
 
+  /* ── Editorial / inline tokens ───────────────────────────── */
+  --rule:          #1a1a1a;   /* hairline dividers (1px rules) */
+  --text-dim:      #2a2a2a;   /* near-invisible labels / icons */
+  --hover-bg:      rgba(255, 255, 255, 0.015); /* table row hover  */
+  --track-bg:      #222222;   /* progress bar tracks           */
+
   /* ── Accent: green — used sparingly ──────────────────────── */
   --green-accent:  #22c55e;
   --green-bright:  #4ade80;
@@ -43,20 +49,51 @@
   --font-mono:       var(--font-jetbrains), "Courier New", monospace;
 }
 
+/* ─── Light theme ─────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-primary:    #f8f8f6;
+  --bg-secondary:  #f0f0ed;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #f9f9f7;
+  --bg-raised:     #ebebeb;
+  --border:        #e2e2de;
+  --border-bright: #d0d0cb;
+  --border-accent: rgba(34, 197, 94, 0.3);
+  --text-primary:  #111110;
+  --text-secondary:#4a4a47;
+  --text-muted:    #888884;
+  --rule:          #e2e2de;
+  --text-dim:      #c8c8c4;
+  --hover-bg:      rgba(0, 0, 0, 0.025);
+  --track-bg:      #e2e2de;
+  --green-dim:     #dcfce7;
+}
+
 /* ─── Reset ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
+
+/* ─── Theme transition ────────────────────────────────────────── */
+html {
+  transition: background-color 0.2s ease;
+}
+body, aside, nav, header, main, section, article,
+[class*="bg-"], [style*="background"] {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
 
 /* ─── Body ────────────────────────────────────────────────────── */
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-display);
-  /* Very subtle neutral grid — like graph paper */
   background-image: radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px);
   background-size: 28px 28px;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+[data-theme="light"] body {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.055) 1px, transparent 1px);
 }
 
 /* ─── Typography ──────────────────────────────────────────────── */
@@ -160,7 +197,7 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar       { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 /* ─── Landing-specific ────────────────────────────────────────── */
 

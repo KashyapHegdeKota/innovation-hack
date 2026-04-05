@@ -7,7 +7,7 @@ import { ArrowUpRight, RefreshCcw } from "lucide-react";
 import { getAgentScores } from "@/lib/greenledger-api";
 
 function getScoreColor(s: number | null) {
-  if (s == null) return "#2a2a2a";
+  if (s == null) return "var(--text-dim)";
   if (s >= 75) return "#22c55e";
   if (s >= 50) return "#f59e0b";
   return "#f87171";
@@ -83,7 +83,7 @@ export default function AgentsPage() {
       </motion.div>
 
       {/* ── Stat strip ─────────────────────────────────────────── */}
-      <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a", padding: "1.25rem 0", marginBottom: "2rem" }}>
+      <motion.div variants={item} style={{ borderTop: "1px solid var(--rule)", borderBottom: "1px solid var(--rule)", padding: "1.25rem 0", marginBottom: "2rem" }}>
         <div className="flex items-stretch">
           {[
             { label: "Total Agents",      value: String(agents.length),          grade: null,            accent: false },
@@ -107,7 +107,7 @@ export default function AgentsPage() {
                   {s.label}
                 </p>
               </div>
-              {i < 3 && <div style={{ width: "1px", backgroundColor: "#1a1a1a", margin: "0 2rem", alignSelf: "stretch" }} />}
+              {i < 3 && <div style={{ width: "1px", backgroundColor: "var(--rule)", margin: "0 2rem", alignSelf: "stretch" }} />}
             </div>
           ))}
         </div>
@@ -122,9 +122,9 @@ export default function AgentsPage() {
             </p>
           </div>
         ) : (
-          <div style={{ borderTop: "1px solid #1a1a1a" }}>
+          <div style={{ borderTop: "1px solid var(--rule)" }}>
             {/* Column labels */}
-            <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 100px 80px 160px 90px 20px", gap: "1rem", padding: "0.5rem 0", borderBottom: "1px solid #1a1a1a" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 100px 80px 160px 90px 20px", gap: "1rem", padding: "0.5rem 0", borderBottom: "1px solid var(--rule)" }}>
               {["#", "Agent", "Score", "Inferences", "CO₂e", "Wallet", "Status", ""].map((h, i) => (
                 <span key={i} style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: i >= 2 && i <= 4 ? "right" : "left" }}>
                   {h}
@@ -149,14 +149,14 @@ export default function AgentsPage() {
                     gap: "1rem",
                     alignItems: "center",
                     padding: "0.9rem 0",
-                    borderBottom: "1px solid #1a1a1a",
+                    borderBottom: "1px solid var(--rule)",
                     borderLeft: i === 0 ? `2px solid ${color}` : "2px solid transparent",
                     paddingLeft: i === 0 ? "0.75rem" : "2px",
                     textDecoration: "none",
                     transition: "all 0.15s ease",
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.015)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "var(--hover-bg)";
                     (e.currentTarget as HTMLElement).style.borderLeftColor = color;
                     (e.currentTarget as HTMLElement).style.paddingLeft = "0.75rem";
                   }}
@@ -207,7 +207,7 @@ export default function AgentsPage() {
                   <div>
                     {walletPct != null ? (
                       <div>
-                        <div style={{ height: "2px", borderRadius: "1px", backgroundColor: "#222", marginBottom: "4px", overflow: "hidden" }}>
+                        <div style={{ height: "2px", borderRadius: "1px", backgroundColor: "var(--track-bg)", marginBottom: "4px", overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${Math.min(walletPct, 100)}%`, backgroundColor: walletColor, borderRadius: "1px", transition: "width 0.8s ease" }} />
                         </div>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: walletColor }}>{walletPct}% used</span>
