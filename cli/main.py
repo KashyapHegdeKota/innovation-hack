@@ -30,9 +30,9 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
-from tools import ToolExecutor
-from renderer import Renderer
-from config import load_config, run_setup, CONFIG_FILE, CONFIG_DIR
+from cli.tools import ToolExecutor
+from cli.renderer import Renderer
+from cli.config import load_config, run_setup, CONFIG_FILE, CONFIG_DIR
 
 console = Console()
 
@@ -42,6 +42,14 @@ API_URL           = "https://api.anthropic.com/v1/messages"
 ROUTER_URL   = os.environ.get("ROUTER_URL",   "https://api.kashyaphegde.com/greenledger/v1/analyze")
 INFER_URL    = os.environ.get("INFER_URL",    "https://api.kashyaphegde.com/greenledger/v1/infer")
 RECEIPTS_URL = os.environ.get("RECEIPTS_URL", "https://api.kashyaphegde.com/greenledger/v1/receipts")
+
+# --- AUTHENTICATION HEADERS ---
+# Load the config once at startup to grab the Auth0 token
+_local_cfg = load_config()
+AUTH_TOKEN = _local_cfg.get("auth_token", "")
+
+# If the user is logged in, attach the Bearer token. Otherwise, send empty headers.
+API_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"} if AUTH_TOKEN else {}
 
 # ── Model registry ───────────────────────────────────────────────────────────────
 
@@ -157,6 +165,7 @@ async def check_router(user_prompt: str, model_id: str) -> dict:
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 _active_router_url,
+                headers = API_HEADERS,
                 json={"user_prompt": user_prompt, "selected_model": model_id},
             )
             resp.raise_for_status()
@@ -175,6 +184,7 @@ async def call_infer(prompt: str, model_id: str, max_tokens: int = 1024) -> Opti
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 INFER_URL,
+                headers=API_HEADERS,
                 json={"prompt": prompt, "model": model_id, "max_tokens": max_tokens},
             )
             if resp.status_code == 401:
@@ -205,7 +215,7 @@ async def push_receipt(
     savings_pct = round((1 - receipt.get("co2e_g", 0) / naive_co2e) * 100) if naive_co2e > 0 else 0
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            await client.post(RECEIPTS_URL, json={
+            await client.post(RECEIPTS_URL, headers=API_HEADERS, json={
                 "agent_id": "cli-user",
                 "model": model_id,
                 "provider": provider,
@@ -938,30 +948,36 @@ async def main():
     console.print("[dim green]  Thanks for computing sustainably. 🌱[/]\n")
 
 
-if __name__ == "__main__":
-    # 1. Manual Setup Trigger (e.g., `python main.py setup`)
+def main_entry():
+    """Entry point for `greenledger` console command."""
+    global ANTHROPIC_API_KEY
+
+    # 1. Manual Setup Trigger (e.g., `greenledger setup`)
     if len(sys.argv) > 1 and sys.argv[1].lower() == "setup":
         run_setup()
         sys.exit(0)
-        
+
     # 2. Auto-Setup Trigger (If config.json doesn't exist yet)
     if not CONFIG_FILE.exists():
         run_setup()
 
     # 3. Load the keys into memory for the session
     local_config = load_config()
-    
+
     # Override environment variables so your app uses the JSON keys
     if local_config.get("ANTHROPIC_API_KEY"):
         os.environ["ANTHROPIC_API_KEY"] = local_config["ANTHROPIC_API_KEY"]
-        # Update the global variable if your code relies on it
-        ANTHROPIC_API_KEY = local_config["ANTHROPIC_API_KEY"] 
-        
+        ANTHROPIC_API_KEY = local_config["ANTHROPIC_API_KEY"]
+
     if local_config.get("OPENAI_API_KEY"):
         os.environ["OPENAI_API_KEY"] = local_config["OPENAI_API_KEY"]
-        
+
     if local_config.get("GEMINI_API_KEY"):
         os.environ["GEMINI_API_KEY"] = local_config["GEMINI_API_KEY"]
 
     # 4. Start the main REPL loop
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    main_entry()

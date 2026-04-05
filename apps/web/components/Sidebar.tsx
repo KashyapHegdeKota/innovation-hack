@@ -2,8 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Leaf, LogOut } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import {
+  LayoutDashboard,
+  Receipt,
+  Bot,
+  Leaf,
+  LogOut,
+  Route,
+  Wallet,
+  DollarSign,
+} from "lucide-react";
+import { useUser } from "@auth0/nextjs-auth0/client";
 
 const navItems = [
   { href: "/dashboard",          label: "Overview"       },
@@ -16,7 +25,7 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user } = useUser();
 
   return (
     <aside
@@ -86,42 +95,23 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Divider */}
-      <div style={{ borderTop: "1px solid var(--border)" }}>
-        <div className="px-5 py-4">
-          {user && (
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                style={{
-                  backgroundColor: "rgba(34,197,94,0.1)",
-                  color: "var(--green-accent)",
-                  fontFamily: "var(--font-mono)",
-                  border: "1px solid rgba(34,197,94,0.12)",
-                }}
-              >
-                {(user.displayName || "U")[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                  {user.displayName || "User"}
-                </p>
-                <p className="text-[10px] truncate" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                  {user.email}
-                </p>
-              </div>
-              <button
-                onClick={logout}
-                className="p-1 rounded-md transition-colors duration-100"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-secondary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
+      {/* User / Logout */}
+      <div className="px-4 py-4 border-t" style={{ borderColor: "var(--border)" }}>
+        {user && (
+          <div className="flex items-center justify-between">
+            <div className="truncate">
+              <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                {user.name || "User"}
+              </p>
+              <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                {user.email}
+              </p>
             </div>
-          )}
-        </div>
+            <a href = "/api/auth/logout" className="text-muted hover:text-primary transition-colors">
+              <LogOut className="w-4 h-4" />
+            </a>
+          </div>
+        )}
       </div>
     </aside>
   );

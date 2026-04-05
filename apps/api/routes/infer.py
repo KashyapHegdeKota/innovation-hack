@@ -247,16 +247,39 @@ async def analyze_and_route(request: RoutingRequest):
     
     Sustainability Context (Available Models & Energy Costs): 
     {json.dumps(eco_context, indent=2)}
+
+    While environmental efficiency is a core goal, YOUR PRIMARY DIRECTIVE IS CAPABILITY MATCHING. You must never assign a low-tier model to a high-complexity task just to save energy. An eco-friendly failure is still a failure.
+
+    First, classify the task domain:
+    - CODING: Writing code, debugging, refactoring, or reviewing syntax.
+    - REASONING: Logic puzzles, architectural planning, math, or deep analytical thinking.
+
+    Second, classify the task complexity:
+    - LIGHT: Simple questions, basic formatting, syntax fixes, definitions.
+    - STANDARD: Writing functions, standard logic loops, medium-length refactoring.
+    - HEAVY: Full system architecture, complex multi-file debugging, advanced algorithmic reasoning.
+
+    Here is the strict Model Registry you must use for your selection:
+
+    ### 1. Coding Tasks
+    - Light: gpt-4.1-mini, claude-haiku-4-5
+    - Standard: gpt-5.2-mini, gemini-3.1-flash, claude-sonnet-4-6
+    - Heavy: gpt-5.2, o3, claude-opus-4-6, gemini-3.1-pro
+
+    ### 2. Reasoning Tasks
+    - Light: gpt-4.1-nano, gpt-4.1-mini
+    - Standard: gpt-5.2-mini, gemini-3.1-flash, claude-sonnet-4-6
+    - Heavy: gpt-5.2, o3, claude-opus-4-6, gemini-3.1-pro
     
     ROUTING RULES:
-    1. Evaluate the complexity of the user's prompt (low, medium, high).
-    2. If the task is simple (like summarization, basic math, or "Hello") AND the user selected a standard or heavy model, YOU MUST select a greener alternative from the context (e.g., a "nano" or "light" tier model).
-    3. The recommended_model MUST be one of these exact IDs: {valid_model_ids}
-    
+    1. CAPABILITY FIRST: Never assign a "Light" model to a "Standard" or "Heavy" task.
+    2. OVERKILL PREVENTION: If the user selected a "Heavy" model for a "Light" task, you MUST suggest a downgrade to save energy.
+    3. TIE-BREAKERS: If multiple models fit the required tier, default to the one with the lowest energy footprint.    
+    4. The recommended_model MUST be one of these exact IDs: {valid_model_ids}
+
     Respond ONLY with a valid JSON object. Example format:
     {{
       "complexity": "low", 
-      "reasoning": "The user just said hello, which requires zero complex reasoning.",
       "recommended_model": "model_id_from_context"
     }}
     """
@@ -268,7 +291,8 @@ async def analyze_and_route(request: RoutingRequest):
             {"role": "user", "content": request.user_prompt}
         ],
         "stream": False,
-        "format": "json" # Forces Llama to output valid JSON
+        "format": "json", # Forces Llama to output valid JSON
+        "keep_alive": -1
     }
 
     async with httpx.AsyncClient() as client:
