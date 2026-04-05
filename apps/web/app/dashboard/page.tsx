@@ -103,17 +103,38 @@ export default function DashboardPage() {
         </span>
       </div>
 
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard label="Total CO2e"       value={Number(s.total_co2e_g).toFixed(3)}            unit="g"  icon={Cloud} />
+        <StatCard label="Energy Consumed"  value={Number(s.total_energy_wh).toFixed(2)}          unit="Wh" icon={Zap} />
+        <StatCard label="Water Usage"      value={Number(s.total_water_ml).toFixed(1)}            unit="mL" icon={Droplets} />
+        <StatCard label="Carbon Levy"      value={"$" + Number(s.total_levy_usd).toFixed(5)}            icon={DollarSign} />
+        <StatCard label="Avg CO2 Savings"  value={Number(s.avg_savings_vs_naive_pct).toFixed(1)}  unit="%" icon={TrendingDown} />
+        <StatCard label="Total Inferences" value={Number(s.total_inferences).toLocaleString()}          icon={Bot} />
+      </div>
+
+      {/* Gauge + charts row */}
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-3">
           <SustainabilityGauge score={sc.current_score} previousScore={sc.previous_score} />
         </div>
-        <div className="col-span-9 grid grid-cols-3 gap-4">
-          <StatCard label="Total CO2e"       value={Number(s.total_co2e_g).toFixed(3)}            unit="g"  icon={Cloud} />
-          <StatCard label="Energy Consumed"  value={Number(s.total_energy_wh).toFixed(2)}          unit="Wh" icon={Zap} />
-          <StatCard label="Water Usage"      value={Number(s.total_water_ml).toFixed(1)}            unit="mL" icon={Droplets} />
-          <StatCard label="Carbon Levy"      value={"$" + Number(s.total_levy_usd).toFixed(5)}            icon={DollarSign} />
-          <StatCard label="Avg CO2 Savings"  value={Number(s.avg_savings_vs_naive_pct).toFixed(1)}  unit="%" icon={TrendingDown} />
-          <StatCard label="Total Inferences" value={Number(s.total_inferences).toLocaleString()}          icon={Bot} />
+        <div className="col-span-6">
+          {emissionsData.length > 0
+            ? <EmissionsChart data={emissionsData} />
+            : <div className="rounded-xl border p-8 text-center text-sm h-full flex items-center justify-center"
+                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                No emissions data yet — run a CLI query to see the chart.
+              </div>
+          }
+        </div>
+        <div className="col-span-3">
+          {modelData.length > 0
+            ? <ModelPieChart data={modelData} />
+            : <div className="rounded-xl border p-8 text-center text-sm h-full flex items-center justify-center"
+                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
+                No model data yet.
+              </div>
+          }
         </div>
       </div>
 
@@ -145,27 +166,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
-      <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-8">
-          {emissionsData.length > 0
-            ? <EmissionsChart data={emissionsData} />
-            : <div className="rounded-xl border p-8 text-center text-sm"
-                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                No emissions data yet — run a CLI query to see the chart.
-              </div>
-          }
-        </div>
-        <div className="col-span-4">
-          {modelData.length > 0
-            ? <ModelPieChart data={modelData} />
-            : <div className="rounded-xl border p-8 text-center text-sm"
-                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
-                No model data yet.
-              </div>
-          }
-        </div>
-      </div>
 
       {sc.recommendations?.length > 0 && (
         <div>

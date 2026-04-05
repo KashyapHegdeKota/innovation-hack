@@ -2,7 +2,7 @@
 
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  Tooltip, ResponsiveContainer, BarChart, Bar, Cell,
 } from "recharts";
 
 interface DataPoint {
@@ -34,6 +34,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function EmissionsChart({ data, title = "Emissions Over Time" }: EmissionsChartProps) {
+  const singleDay = data.length <= 1;
+
   return (
     <div className="relative rounded-xl border glow-hover overflow-hidden p-5"
       style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
@@ -56,32 +58,38 @@ export default function EmissionsChart({ data, title = "Emissions Over Time" }: 
       </div>
 
       <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id="co2Gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-            </linearGradient>
-            <filter id="lineGlow">
-              <feGaussianBlur stdDeviation="2" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-            axisLine={false} tickLine={false} dy={8} />
-          <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-            axisLine={false} tickLine={false} width={36} />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border-bright)", strokeWidth: 1, strokeDasharray: "4 4" }} />
-          <Area type="monotone" dataKey="co2e" stroke="#22c55e" strokeWidth={2}
-            fill="url(#co2Gradient)" name="CO2e (g)" dot={false} activeDot={{ r: 4, fill: "#22c55e", strokeWidth: 0 }} />
-          <Area type="monotone" dataKey="energy" stroke="#3b82f6" strokeWidth={2}
-            fill="url(#energyGradient)" name="Energy (Wh)" dot={false} activeDot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }} />
-        </AreaChart>
+        {singleDay ? (
+          // Single day — use grouped bars instead of area (dots look bad)
+          <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barGap={4}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} dy={8} />
+            <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(34,197,94,0.05)" }} />
+            <Bar dataKey="co2e" name="CO2e (g)" fill="#22c55e" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
+            <Bar dataKey="energy" name="Energy (Wh)" fill="#3b82f6" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
+          </BarChart>
+        ) : (
+          <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id="co2Gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} dy={8} />
+            <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} width={36} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: "var(--border-bright)", strokeWidth: 1, strokeDasharray: "4 4" }} />
+            <Area type="monotone" dataKey="co2e" stroke="#22c55e" strokeWidth={2}
+              fill="url(#co2Gradient)" name="CO2e (g)" dot={false} activeDot={{ r: 4, fill: "#22c55e", strokeWidth: 0 }} />
+            <Area type="monotone" dataKey="energy" stroke="#3b82f6" strokeWidth={2}
+              fill="url(#energyGradient)" name="Energy (Wh)" dot={false} activeDot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }} />
+          </AreaChart>
+        )}
       </ResponsiveContainer>
     </div>
   );
