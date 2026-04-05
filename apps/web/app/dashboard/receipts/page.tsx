@@ -102,7 +102,7 @@ export default function ReceiptsPage() {
               </span>
             </div>
             {expandedId === r.id && (
-              <div className="px-5 py-4 border-b text-xs grid grid-cols-3 gap-4"
+              <div className="px-5 py-4 border-b text-xs grid grid-cols-4 gap-4"
                 style={{ backgroundColor: "var(--bg-card-hover)", borderColor: "var(--border)", color: "var(--text-secondary)" }}>
                 <div>
                   <p className="font-medium mb-1" style={{ color: "var(--text-muted)" }}>Tokens</p>
@@ -121,6 +121,25 @@ export default function ReceiptsPage() {
                   <p className="font-mono">Naive: {Number(r.comparison?.naive_co2e_g ?? 0).toFixed(3)}g &middot; Saved:
                     <span style={{ color: "var(--green-accent)" }}> {r.comparison?.savings_pct ?? 0}%</span>
                   </p>
+                </div>
+                <div>
+                  <p className="font-medium mb-1" style={{ color: "var(--text-muted)" }}>Routing Savings</p>
+                  {r.savings ? (
+                    <div className="font-mono space-y-0.5">
+                      <p>
+                        <span style={{ color: "var(--text-muted)" }}>{r.savings.original_model}</span>
+                        {" → "}
+                        <span style={{ color: "var(--green-accent)" }}>{r.model}</span>
+                      </p>
+                      <p>
+                        Saved: <span style={{ color: "var(--green-accent)" }}>${Number(r.savings.savings_usd).toFixed(5)}</span>
+                        {" → "}
+                        Levy: <span style={{ color: "var(--amber-accent)" }}>${Number(r.savings.levy_from_savings_usd).toFixed(5)}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="font-mono" style={{ color: "var(--text-muted)" }}>No downgrade</p>
+                  )}
                 </div>
               </div>
             )}

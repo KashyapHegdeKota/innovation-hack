@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [score, setScore] = useState<any>(EMPTY_SCORE);
   const [emissionsData, setEmissionsData] = useState<any[]>([]);
   const [modelData, setModelData] = useState<any[]>([]);
+  const [routingStats, setRoutingStats] = useState({ routed: 0, downgraded: 0, co2eAvoided: 0 });
   const [live, setLive] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +32,7 @@ export default function DashboardPage() {
         const [dashRes, scoreRes, receiptsRes] = await Promise.all([
           getDashboardSummary(),
           getOrgScore(),
-          listReceipts({ limit: 200 }),
+          listReceipts({ limit: 500 }),
         ]);
         setSummary(dashRes.data);
         setScore(scoreRes.data);
@@ -62,8 +63,17 @@ export default function DashboardPage() {
           value,
           color: colors[i % colors.length],
         })));
+
+        // Compute routing impact from real receipts
+        const downgraded = receipts.filter((r: any) =>
+          r.requested_model && r.model && r.requested_model !== r.model
+        ).length;
+        const co2eAvoided = receipts.reduce((sum: number, r: any) =>
+          sum + Math.max(0, (r.comparison?.naive_co2e_g ?? 0) - (r.environmental_cost?.co2e_g ?? 0)), 0
+        );
+        setRoutingStats({ routed: receipts.length, downgraded, co2eAvoided });
       } catch {
-        // backend unavailable — stay on empty state
+        // backend unavailable
       }
       setLoading(false);
     }
@@ -72,6 +82,9 @@ export default function DashboardPage() {
 
   const s = summary;
   const sc = score;
+  const downgradePct = routingStats.routed > 0
+    ? Math.round((routingStats.downgraded / routingStats.routed) * 100)
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -94,20 +107,50 @@ export default function DashboardPage() {
           <SustainabilityGauge score={sc.current_score} previousScore={sc.previous_score} />
         </div>
         <div className="col-span-9 grid grid-cols-3 gap-4">
-          <StatCard label="Total CO2e"          value={Number(s.total_co2e_g).toFixed(3)}           unit="g"  icon={Cloud} />
-          <StatCard label="Energy Consumed"     value={Number(s.total_energy_wh).toFixed(2)}         unit="Wh" icon={Zap} />
-          <StatCard label="Water Usage"         value={Number(s.total_water_ml).toFixed(1)}          unit="mL" icon={Droplets} />
-          <StatCard label="Carbon Levy"         value={"$" + Number(s.total_levy_usd).toFixed(5)}          icon={DollarSign} />
-          <StatCard label="Avg CO2 Savings"     value={Number(s.avg_savings_vs_naive_pct).toFixed(1)} unit="%" icon={TrendingDown} />
-          <StatCard label="Total Inferences"    value={Number(s.total_inferences).toLocaleString()}        icon={Bot} />
+          <StatCard label="Total CO2e"       value={Number(s.total_co2e_g).toFixed(3)}            unit="g"  icon={Cloud} />
+          <StatCard label="Energy Consumed"  value={Number(s.total_energy_wh).toFixed(2)}          unit="Wh" icon={Zap} />
+          <StatCard label="Water Usage"      value={Number(s.total_water_ml).toFixed(1)}            unit="mL" icon={Droplets} />
+          <StatCard label="Carbon Levy"      value={"$" + Number(s.total_levy_usd).toFixed(5)}            icon={DollarSign} />
+          <StatCard label="Avg CO2 Savings"  value={Number(s.avg_savings_vs_naive_pct).toFixed(1)}  unit="%" icon={TrendingDown} />
+          <StatCard label="Total Inferences" value={Number(s.total_inferences).toLocaleString()}          icon={Bot} />
         </div>
       </div>
+
+      {/* Green Routing Impact banner — computed from real receipts */}
+      {routingStats.routed > 0 && (
+        <div className="rounded-xl border p-5"
+          style={{ backgroundColor: "rgba(34,197,94,0.06)", borderColor: "rgba(34,197,94,0.2)" }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--green-accent)" }}>Green Routing Impact</h3>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                {routingStats.downgraded} of {routingStats.routed} queries downgraded ({downgradePct}%) · 20% of savings funds carbon removal
+              </p>
+            </div>
+            <div className="flex gap-6">
+              <div className="text-right">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Queries Rerouted</p>
+                <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>{routingStats.downgraded}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>CO2e Avoided</p>
+                <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>{routingStats.co2eAvoided.toFixed(3)}g</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Downgrade Rate</p>
+                <p className="text-lg font-bold font-mono" style={{ color: "var(--green-accent)" }}>{downgradePct}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-8">
           {emissionsData.length > 0
             ? <EmissionsChart data={emissionsData} />
-            : <div className="rounded-xl border p-8 text-center text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
+            : <div className="rounded-xl border p-8 text-center text-sm"
+                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
                 No emissions data yet — run a CLI query to see the chart.
               </div>
           }
@@ -115,7 +158,8 @@ export default function DashboardPage() {
         <div className="col-span-4">
           {modelData.length > 0
             ? <ModelPieChart data={modelData} />
-            : <div className="rounded-xl border p-8 text-center text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
+            : <div className="rounded-xl border p-8 text-center text-sm"
+                style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>
                 No model data yet.
               </div>
           }
