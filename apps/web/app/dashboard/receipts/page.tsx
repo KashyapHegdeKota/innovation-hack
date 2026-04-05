@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Download, ChevronDown, ChevronUp, RefreshCcw } from "lucide-react";
 import { listReceipts } from "@/lib/greenledger-api";
-import { recentReceipts as mockReceipts } from "@/lib/mock-data";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -25,18 +24,19 @@ function SavingsBadge({ pct }: { pct: number }) {
 }
 
 export default function ReceiptsPage() {
-  const [receipts, setReceipts] = useState<any[]>(mockReceipts);
+  const [receipts, setReceipts] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [live, setLive] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchReceipts = async () => {
     setLoading(true);
     try {
       const res = await listReceipts({ limit: 100 });
       const data = Array.isArray(res.data) ? res.data : [];
-      if (data.length > 0) { setReceipts(data); setLive(true); }
-    } catch { /* stay on mock */ }
+      setReceipts(data);
+      setLive(true);
+    } catch { /* backend unavailable */ }
     setLoading(false);
   };
 

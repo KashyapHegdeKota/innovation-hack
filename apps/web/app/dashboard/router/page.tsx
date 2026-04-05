@@ -7,7 +7,6 @@ import {
   ResponsiveContainer, Cell,
 } from "recharts";
 import apiClient from "@/lib/api-client";
-import { routingDecisions as mockDecisions } from "@/lib/mock-data";
 
 const assessmentConfig: Record<string, { label: string; color: string; bg: string }> = {
   overkill:     { label: "Overkill",      color: "var(--red-accent)",   bg: "rgba(239,68,68,0.1)"  },
@@ -28,9 +27,9 @@ function shortModel(m: string) {
 }
 
 export default function RouterPage() {
-  const [decisions, setDecisions] = useState<any[]>(mockDecisions);
+  const [decisions, setDecisions] = useState<any[]>([]);
   const [live, setLive] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchDecisions = async () => {
@@ -38,8 +37,9 @@ export default function RouterPage() {
     try {
       const res = await apiClient.get("/v1/router/decisions");
       const data = Array.isArray(res.data) ? res.data : [];
-      if (data.length > 0) { setDecisions(data); setLive(true); }
-    } catch { /* stay on mock */ }
+      setDecisions(data);
+      setLive(true);
+    } catch { /* backend unavailable */ }
     setLoading(false);
   };
 

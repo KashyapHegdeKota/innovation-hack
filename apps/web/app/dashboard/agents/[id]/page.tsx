@@ -14,7 +14,6 @@ import {
 import StatCard from "@/components/StatCard";
 import EmissionsChart from "@/components/EmissionsChart";
 import { getAgentScore, listReceipts } from "@/lib/greenledger-api";
-import { emissionsOverTime } from "@/lib/mock-data";
 
 function WalletGauge({ pct }: { pct: number | null }) {
   if (pct == null) return <p className="text-sm" style={{ color: "var(--text-muted)" }}>No wallet configured</p>;
@@ -47,6 +46,7 @@ export default function AgentDetailPage() {
 
   const [agent, setAgent] = useState<any | null>(null);
   const [receipts, setReceipts] = useState<any[]>([]);
+  const [emissionsData, setEmissionsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,13 +55,26 @@ export default function AgentDetailPage() {
       try {
         const [agentRes, receiptsRes] = await Promise.all([
           getAgentScore(id),
-          listReceipts({ agent_id: id, limit: 20 }),
+          listReceipts({ agent_id: id, limit: 100 }),
         ]);
         setAgent(agentRes.data);
-        setReceipts(Array.isArray(receiptsRes.data) ? receiptsRes.data : []);
-      } catch {
-        // agent stays null
-      }
+        const recs = Array.isArray(receiptsRes.data) ? receiptsRes.data : [];
+        setReceipts(recs.slice(0, 20));
+
+        // Build emissions chart from real receipts
+        const byDay: Record<string, { co2e: number; energy: number }> = {};
+        recs.forEach((r: any) => {
+          const day = new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          if (!byDay[day]) byDay[day] = { co2e: 0, energy: 0 };
+          byDay[day].co2e += r.environmental_cost?.co2e_g ?? 0;
+          byDay[day].energy += r.environmental_cost?.energy_wh ?? 0;
+        });
+        setEmissionsData(Object.entries(byDay).map(([date, v]) => ({
+          date,
+          co2e: Math.round(v.co2e * 1000) / 1000,
+          energy: Math.round(v.energy * 100) / 100,
+        })));
+      } catch { /* agent stays null */ }
       setLoading(false);
     }
     load();
@@ -132,7 +145,10 @@ export default function AgentDetailPage() {
         </div>
         <div className="col-span-7 space-y-4">
           <WalletGauge pct={agent.wallet_utilization_pct} />
-          <EmissionsChart data={emissionsOverTime} title={`${agent.display_name || agent.agent_id} — Emissions`} />
+          {emissionsData.length > 0
+            ? <EmissionsChart data={emissionsData} title={`${agent.display_name || agent.agent_id} — Emissions`} />
+            : <div className="rounded-xl border p-6 text-center text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>No emissions data yet.</div>
+          }
         </div>
       </div>
 
