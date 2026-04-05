@@ -10,291 +10,229 @@ interface PipelineProps {
   lastReceipts?: any[];
 }
 
-const NODE_LABELS = {
-  prompt:   { top: "INPUT",         main: "User Prompt",    color: "var(--teal)" },
-  router:   { top: "ENGINE",        main: "Green Router",   color: "var(--green)" },
-  model:    { top: "SELECTED",      main: "Greener Model",  color: "var(--green-bright)" },
-  response: { top: "OUTPUT",        main: "Response",       color: "var(--teal)" },
-};
-
-function Node({
-  type, active, color
-}: { type: keyof typeof NODE_LABELS; active: boolean; color: string }) {
-  const info = NODE_LABELS[type];
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <motion.div
-        animate={active ? {
-          boxShadow: [
-            `0 0 12px ${color}44`,
-            `0 0 28px ${color}88`,
-            `0 0 12px ${color}44`,
-          ],
-          borderColor: [
-            `${color}33`,
-            `${color}99`,
-            `${color}33`,
-          ],
-        } : {}}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className="relative rounded-xl px-4 py-2.5 text-center min-w-[110px]"
-        style={{
-          backgroundColor: active ? `${color}0d` : "var(--bg-card)",
-          border: `1px solid ${active ? `${color}44` : "var(--border)"}`,
-        }}
-      >
-        {active && (
-          <div
-            className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: `linear-gradient(90deg, transparent, ${color}88, transparent)` }}
-          />
-        )}
-        <p className="terminal-label mb-0.5">{info.top}</p>
-        <p className="text-[11px] font-semibold" style={{ color: active ? color : "var(--text-secondary)", fontFamily: "var(--font-display)" }}>
-          {info.main}
-        </p>
-      </motion.div>
-    </div>
-  );
+interface Decision {
+  requested: string;
+  selected: string;
+  rerouted: boolean;
+  co2Requested: number;
+  co2Selected: number;
+  prompt: string;
+  idx: number;
 }
 
-function Connector({
-  active, color = "var(--green)", rejected = false
-}: { active: boolean; color?: string; rejected?: boolean }) {
-  return (
-    <div className="relative flex items-center" style={{ width: "60px", height: "32px" }}>
-      {/* Track line */}
-      <div
-        className="absolute inset-x-0"
-        style={{
-          top: "50%",
-          height: "1px",
-          background: rejected
-            ? "rgba(239,68,68,0.2)"
-            : "var(--border-bright)",
-          transform: "translateY(-50%)",
-        }}
-      />
-      {/* Animated glow line */}
-      {active && !rejected && (
-        <motion.div
-          className="absolute inset-x-0"
-          style={{ top: "50%", height: "2px", transform: "translateY(-50%)", originX: 0 }}
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: [0, 1], opacity: [0, 1, 0.8] }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <div
-            style={{
-              width: "100%", height: "100%",
-              background: `linear-gradient(90deg, ${color}88, ${color})`,
-              boxShadow: `0 0 6px ${color}`,
-            }}
-          />
-        </motion.div>
-      )}
-      {/* Arrow */}
-      <div
-        className="absolute right-0"
-        style={{
-          borderLeft: `5px solid ${rejected ? "rgba(239,68,68,0.3)" : active ? color : "var(--border-bright)"}`,
-          borderTop: "4px solid transparent",
-          borderBottom: "4px solid transparent",
-        }}
-      />
-    </div>
-  );
-}
-
-// Animated traveling packet
-function TravelingPacket({ active, color = "#22c55e" }: { active: boolean; color?: string }) {
-  if (!active) return null;
-  return (
-    <motion.div
-      className="absolute pointer-events-none z-10"
-      style={{
-        width: "8px", height: "8px",
-        borderRadius: "50%",
-        backgroundColor: color,
-        boxShadow: `0 0 10px ${color}, 0 0 20px ${color}88`,
-        top: "calc(50% - 4px)",
-      }}
-      initial={{ left: "0%" }}
-      animate={{ left: "calc(100% - 8px)" }}
-      transition={{ duration: 1.2, ease: "easeInOut" }}
-    />
-  );
-}
+const FALLBACK: Decision[] = [
+  { idx: 0, requested: "claude-opus-4-6",   selected: "claude-haiku-4-5", rerouted: true,  co2Requested: 1.14, co2Selected: 0.06, prompt: "Summarize this quarterly earnings report" },
+  { idx: 1, requested: "gpt-4-turbo",        selected: "claude-haiku-3",   rerouted: true,  co2Requested: 1.08, co2Selected: 0.08, prompt: "Translate this paragraph to French" },
+  { idx: 2, requested: "claude-3-5-sonnet",  selected: "claude-3-5-sonnet",rerouted: false, co2Requested: 0.85, co2Selected: 0.85, prompt: "Refactor this React component to use hooks" },
+  { idx: 3, requested: "gpt-4o",             selected: "claude-haiku-3",   rerouted: true,  co2Requested: 0.72, co2Selected: 0.08, prompt: "Write a short email responding to this thread" },
+];
 
 export default function RoutingPipeline({ routedCount, downgradeCount, co2Avoided, lastReceipts = [] }: PipelineProps) {
-  const [phase, setPhase] = useState<"idle" | "routing" | "selected" | "done">("idle");
-  const [activeExample, setActiveExample] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout>();
-
-  // Example routing decisions to cycle through
-  const examples = lastReceipts.length > 0
-    ? lastReceipts.slice(0, 5).map((r: any) => ({
-        requested: r.requested_model || r.model || "claude-3-5-sonnet",
-        selected: r.model || "claude-haiku-3",
-        rerouted: r.requested_model && r.model && r.requested_model !== r.model,
-        co2Saved: Math.max(0, (r.comparison?.naive_co2e_g ?? 0) - (r.environmental_cost?.co2e_g ?? 0)),
-        prompt: r.prompt_preview || "AI inference request",
+  const decisions: Decision[] = lastReceipts.length > 0
+    ? lastReceipts.slice(0, 6).map((r: any, i: number) => ({
+        idx: i,
+        requested:    r.requested_model || r.model || "claude-3-5-sonnet",
+        selected:     r.model || "claude-haiku-3",
+        rerouted:     !!(r.requested_model && r.model && r.requested_model !== r.model),
+        co2Requested: r.comparison?.naive_co2e_g  ?? 0.85,
+        co2Selected:  r.environmental_cost?.co2e_g ?? 0.08,
+        prompt:       r.prompt_preview || "AI inference request",
       }))
-    : [
-        { requested: "gpt-4-turbo",            selected: "claude-haiku-3",     rerouted: true,  co2Saved: 2.34, prompt: "Summarize this document" },
-        { requested: "claude-3-5-sonnet",      selected: "claude-3-5-sonnet",  rerouted: false, co2Saved: 0,    prompt: "Write a function in Python" },
-        { requested: "gpt-4o",                 selected: "claude-haiku-3",     rerouted: true,  co2Saved: 3.12, prompt: "Translate this text to Spanish" },
-      ];
+    : FALLBACK;
 
-  const current = examples[activeExample % examples.length];
+  const [idx,     setIdx]     = useState(0);
+  const [phase,   setPhase]   = useState<"in" | "verdict" | "out">("in");
+  const timerRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const runAnimation = () => {
-      setPhase("routing");
-      setTimeout(() => setPhase("selected"), 1200);
-      setTimeout(() => setPhase("done"), 2200);
-      setTimeout(() => {
-        setPhase("idle");
-        setActiveExample(i => i + 1);
-      }, 4000);
+    const cycle = () => {
+      setPhase("in");
+      timerRef.current = setTimeout(() => setPhase("verdict"), 1400);
+      timerRef.current = setTimeout(() => setPhase("out"), 3800);
+      timerRef.current = setTimeout(() => {
+        setIdx(i => (i + 1) % decisions.length);
+        setPhase("in");
+      }, 4400);
     };
+    cycle();
+    const interval = setInterval(cycle, 4400);
+    return () => { clearInterval(interval); clearTimeout(timerRef.current); };
+  }, [decisions.length]);
 
-    runAnimation();
-    intervalRef.current = setInterval(runAnimation, 5000);
-    return () => clearInterval(intervalRef.current);
-  }, []);
-
-  const isRouting = phase === "routing" || phase === "selected" || phase === "done";
-  const isSelected = phase === "selected" || phase === "done";
-  const isDone = phase === "done";
+  const d = decisions[idx % decisions.length];
+  const maxCo2 = Math.max(d.co2Requested, d.co2Selected, 0.01);
+  const savedPct = d.rerouted ? Math.round((1 - d.co2Selected / d.co2Requested) * 100) : 0;
 
   return (
-    <div
-      className="relative rounded-xl border overflow-hidden instrument"
-      style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
-    >
-      {/* Top accent */}
-      <div className="absolute top-0 left-0 right-0 h-px" style={{ backgroundColor: "var(--border-bright)" }} />
+    <div style={{ fontFamily: "var(--font-mono)" }}>
 
-      <div className="p-5 pb-4">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-5">
+      {/* ── Request feed ── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`prompt-${idx}`}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.35 }}
+          className="flex items-baseline gap-3 mb-5"
+        >
+          <span style={{ fontSize: "10px", color: "#22c55e", letterSpacing: "0.12em", textTransform: "uppercase", flexShrink: 0 }}>
+            ● Routing
+          </span>
+          <span style={{ fontSize: "11px", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            "{d.prompt}"
+          </span>
+          <span style={{ fontSize: "9px", color: "#2a2a2a", flexShrink: 0 }}>#{routedCount > 0 ? routedCount - idx : idx + 1}</span>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── Side-by-side decision ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: "1rem", alignItems: "stretch", marginBottom: "1.5rem" }}>
+
+        {/* LEFT — Requested */}
+        <motion.div
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+          key={`left-${idx}`}
+          style={{
+            padding: "1.25rem",
+            borderRadius: "10px",
+            border: `1px solid ${d.rerouted ? "rgba(248,113,113,0.15)" : "var(--border)"}`,
+            backgroundColor: d.rerouted ? "rgba(248,113,113,0.04)" : "var(--bg-card)",
+          }}
+        >
+          <p style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: d.rerouted ? "rgba(248,113,113,0.5)" : "var(--text-muted)", marginBottom: "0.5rem" }}>
+            Requested
+          </p>
+          <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "1rem", letterSpacing: "-0.02em" }}>
+            {d.requested}
+          </p>
+          {/* CO₂ bar */}
           <div>
-            <p className="system-id mb-1">Real-time · AI Routing Engine</p>
-            <h3 className="text-base font-bold" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
-              Green Router Pipeline
-            </h3>
+            <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "#1a1a1a", marginBottom: "6px", overflow: "hidden" }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(d.co2Requested / maxCo2) * 100}%` }}
+                transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                style={{ height: "100%", borderRadius: "2px", backgroundColor: d.rerouted ? "#f87171" : "var(--text-muted)" }}
+              />
+            </div>
+            <p style={{ fontSize: "11px", color: d.rerouted ? "#f87171" : "var(--text-muted)", letterSpacing: "-0.02em" }}>
+              {d.co2Requested.toFixed(3)}g CO₂e
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full pulse-live" style={{ backgroundColor: "var(--teal)" }} />
-            <span className="terminal-label" style={{ color: "var(--teal)" }}>Active</span>
-          </div>
+        </motion.div>
+
+        {/* CENTER — arrow / verdict */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.25rem", width: 40 }}>
+          <AnimatePresence mode="wait">
+            {phase === "verdict" || phase === "out" ? (
+              <motion.div
+                key="verdict"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{ textAlign: "center" }}
+              >
+                {d.rerouted ? (
+                  <>
+                    <p style={{ fontSize: "14px", color: "#22c55e" }}>→</p>
+                    <p style={{ fontSize: "8px", color: "#22c55e", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 2 }}>saved</p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: "14px", color: "#22c55e" }}>✓</p>
+                    <p style={{ fontSize: "8px", color: "#22c55e", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 2 }}>optimal</p>
+                  </>
+                )}
+              </motion.div>
+            ) : (
+              <motion.p
+                key="arrow"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ fontSize: "14px", color: "#2a2a2a" }}
+              >
+                →
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Prompt preview */}
+        {/* RIGHT — Selected */}
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeExample}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.3 }}
-            className="mb-5 px-3 py-2 rounded-lg"
-            style={{ backgroundColor: "rgba(20,184,166,0.05)", border: "1px solid rgba(20,184,166,0.12)" }}
+            key={`right-${idx}-${phase}`}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: phase === "in" ? 0.3 : 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, delay: phase === "verdict" ? 0.1 : 0 }}
+            style={{
+              padding: "1.25rem",
+              borderRadius: "10px",
+              border: `1px solid ${d.rerouted ? "rgba(34,197,94,0.2)" : "var(--border)"}`,
+              backgroundColor: d.rerouted ? "rgba(34,197,94,0.04)" : "var(--bg-card)",
+            }}
           >
-            <p className="terminal-label mb-1" style={{ color: "rgba(20,184,166,0.6)" }}>Incoming request</p>
-            <p className="text-xs font-medium truncate" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>
-              "{current.prompt}"
-            </p>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Pipeline nodes */}
-        <div className="relative flex items-center justify-between">
-          <Node type="prompt" active={isRouting} color="var(--teal)" />
-
-          <div className="relative flex-1 mx-1">
-            <Connector active={isRouting} color="var(--teal)" />
-            <TravelingPacket active={phase === "routing"} color="#14b8a6" />
-          </div>
-
-          <Node type="router" active={isRouting} color="var(--green)" />
-
-          <div className="relative flex-1 mx-1">
-            <Connector active={isSelected} color="var(--green)" />
-            <TravelingPacket active={phase === "selected"} color="#22c55e" />
-          </div>
-
-          <Node type="model" active={isSelected} color="var(--green-bright)" />
-
-          <div className="relative flex-1 mx-1">
-            <Connector active={isDone} color="var(--green)" />
-            <TravelingPacket active={isDone} color="#4ade80" />
-          </div>
-
-          <Node type="response" active={isDone} color="var(--teal)" />
-        </div>
-
-        {/* Reroute indicator */}
-        <AnimatePresence>
-          {isSelected && current.rerouted && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mt-4 flex items-center justify-center gap-3 px-4 py-2.5 rounded-lg"
-              style={{ backgroundColor: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] line-through" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                  {current.requested}
-                </span>
-                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>→</span>
-                <span className="text-[10px] font-bold" style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>
-                  {current.selected}
-                </span>
-              </div>
-              {current.co2Saved > 0 && (
-                <>
-                  <div className="w-px h-3" style={{ backgroundColor: "var(--border-bright)" }} />
-                  <span className="text-[10px] font-semibold" style={{ color: "var(--green)", fontFamily: "var(--font-mono)" }}>
-                    −{current.co2Saved.toFixed(2)}g CO₂
-                  </span>
-                </>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+              <p style={{ fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: d.rerouted ? "rgba(34,197,94,0.6)" : "var(--text-muted)" }}>
+                Selected
+              </p>
+              {d.rerouted && (phase === "verdict" || phase === "out") && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  style={{ fontSize: "9px", color: "#22c55e", letterSpacing: "0.08em", textTransform: "uppercase" }}
+                >
+                  −{savedPct}% CO₂
+                </motion.span>
               )}
-            </motion.div>
-          )}
-          {isSelected && !current.rerouted && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mt-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg"
-              style={{ backgroundColor: "rgba(20,184,166,0.04)", border: "1px solid rgba(20,184,166,0.12)" }}
-            >
-              <span className="text-[10px] font-semibold" style={{ color: "var(--teal)", fontFamily: "var(--font-mono)" }}>
-                ✓ Already optimal · {current.selected}
-              </span>
-            </motion.div>
-          )}
+            </div>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: d.rerouted ? "#22c55e" : "var(--text-primary)", marginBottom: "1rem", letterSpacing: "-0.02em" }}>
+              {d.selected}
+            </p>
+            {/* CO₂ bar */}
+            <div>
+              <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "#1a1a1a", marginBottom: "6px", overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(d.co2Selected / maxCo2) * 100}%` }}
+                  transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                  style={{ height: "100%", borderRadius: "2px", backgroundColor: d.rerouted ? "#22c55e" : "var(--text-muted)" }}
+                />
+              </div>
+              <p style={{ fontSize: "11px", color: d.rerouted ? "#22c55e" : "var(--text-muted)", letterSpacing: "-0.02em" }}>
+                {d.co2Selected.toFixed(3)}g CO₂e
+              </p>
+            </div>
+          </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Stats footer */}
-      <div
-        className="grid grid-cols-3 divide-x divide-[var(--border)]"
-        style={{ borderTop: "1px solid var(--border)" }}
-      >
+      {/* ── Stats strip ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid #1a1a1a" }}>
         {[
-          { label: "Total Routed",   value: String(routedCount)                  },
-          { label: "Rerouted",       value: String(downgradeCount)               },
-          { label: "CO₂ Avoided",   value: `${co2Avoided.toFixed(2)}g`          },
-        ].map((s) => (
-          <div key={s.label} className="px-4 py-3 text-center" style={{ borderColor: "var(--border)" }}>
-            <p className="terminal-label mb-1">{s.label}</p>
-            <p className="text-base font-bold gradient-text data-flicker" style={{ fontFamily: "var(--font-mono)", letterSpacing: "-0.03em" }}>
+          { label: "Total Routed",  value: String(routedCount)           },
+          { label: "Rerouted",      value: String(downgradeCount)        },
+          { label: "CO₂ Avoided",  value: `${co2Avoided.toFixed(2)}g`   },
+        ].map((s, i) => (
+          <div
+            key={s.label}
+            style={{
+              padding: "1rem 0",
+              textAlign: i === 0 ? "left" : i === 2 ? "right" : "center",
+              borderLeft: i > 0 ? "1px solid #1a1a1a" : "none",
+              paddingLeft: i > 0 ? "1.5rem" : 0,
+              paddingRight: i < 2 ? "1.5rem" : 0,
+            }}
+          >
+            <p style={{ fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "4px" }}>
+              {s.label}
+            </p>
+            <p style={{ fontFamily: "var(--font-condensed)", fontSize: "1.8rem", color: i === 2 ? "#22c55e" : "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1 }}>
               {s.value}
             </p>
           </div>

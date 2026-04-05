@@ -3,7 +3,8 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Cloud, Zap, Droplets, Bot } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 import {
   RadarChart,
   Radar,
@@ -11,34 +12,48 @@ import {
   PolarAngleAxis,
   ResponsiveContainer,
 } from "recharts";
-import StatCard from "@/components/StatCard";
 import EmissionsChart from "@/components/EmissionsChart";
 import { getAgentScore, listReceipts } from "@/lib/greenledger-api";
 
-function WalletGauge({ pct }: { pct: number | null }) {
-  if (pct == null) return <p className="text-sm" style={{ color: "var(--text-muted)" }}>No wallet configured</p>;
-  const color = pct >= 80 ? "var(--red-accent)" : pct >= 50 ? "var(--amber-accent)" : "var(--green-accent)";
+function getGrade(s: number) {
+  if (s >= 90) return "A+";
+  if (s >= 80) return "A";
+  if (s >= 70) return "B";
+  if (s >= 55) return "C";
+  if (s >= 40) return "D";
+  return "F";
+}
+function getLabel(s: number) {
+  if (s >= 90) return "Excellent";
+  if (s >= 75) return "Good";
+  if (s >= 50) return "Fair";
+  if (s >= 25) return "Poor";
+  return "Critical";
+}
+function getScoreColor(s: number) {
+  if (s >= 75) return "#22c55e";
+  if (s >= 50) return "#f59e0b";
+  return "#f87171";
+}
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function Sec({ children }: { children: string }) {
   return (
-    <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-      <h3 className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-        Carbon Wallet
-      </h3>
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-3 rounded-full" style={{ backgroundColor: "var(--border)" }}>
-          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }} />
-        </div>
-        <span className="font-mono text-lg font-bold" style={{ color }}>{pct}%</span>
-      </div>
-      <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-        {pct < 50 ? "Healthy budget remaining" : pct < 80 ? "Budget getting tight" : "Approaching budget limit"}
-      </p>
+    <div className="flex items-center gap-3 mb-4">
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#2e2e2e" }}>
+        {children}
+      </span>
+      <div style={{ flex: 1, height: "1px", backgroundColor: "#1a1a1a" }} />
     </div>
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+const item = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } },
+};
 
 export default function AgentDetailPage() {
   const params = useParams();
@@ -61,7 +76,6 @@ export default function AgentDetailPage() {
         const recs = Array.isArray(receiptsRes.data) ? receiptsRes.data : [];
         setReceipts(recs.slice(0, 20));
 
-        // Build emissions chart from real receipts
         const byDay: Record<string, { co2e: number; energy: number }> = {};
         recs.forEach((r: any) => {
           const day = new Date(r.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -82,99 +96,212 @@ export default function AgentDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Link href="/dashboard/agents" className="flex items-center gap-1 text-sm" style={{ color: "var(--green-accent)" }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Agents
+      <div>
+        <Link href="/dashboard/agents" className="flex items-center gap-1 text-xs mb-6 hover:opacity-70 transition-opacity"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
+          <ArrowLeft className="w-3 h-3" /> Back to Agents
         </Link>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>Loading…</p>
       </div>
     );
   }
 
   if (!agent || agent.total_inferences === 0) {
     return (
-      <div className="space-y-4">
-        <Link href="/dashboard/agents" className="flex items-center gap-1 text-sm" style={{ color: "var(--green-accent)" }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Agents
+      <div>
+        <Link href="/dashboard/agents" className="flex items-center gap-1 text-xs mb-6 hover:opacity-70 transition-opacity"
+          style={{ fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
+          <ArrowLeft className="w-3 h-3" /> Back to Agents
         </Link>
-        <p style={{ color: "var(--text-muted)" }}>No data found for agent <span className="font-mono">{id}</span>.</p>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>
+          No data found for agent <span style={{ color: "var(--text-primary)" }}>{id}</span>.
+        </p>
       </div>
     );
   }
 
   const score = agent.sustainability_score ?? 0;
+  const scoreColor = getScoreColor(score);
+  const walletPct = agent.wallet_utilization_pct;
+  const walletColor = walletPct >= 80 ? "#f87171" : walletPct >= 50 ? "#f59e0b" : "#22c55e";
+
   const radarData = [
-    { metric: "Carbon Eff.", score: Math.min(100, score + 10), fullMark: 100 },
-    { metric: "Budget Adh.", score: Math.min(100, score + 5), fullMark: 100 },
-    { metric: "Offset Cov.", score: Math.max(0, score - 5), fullMark: 100 },
-    { metric: "Opt. Adopt.", score, fullMark: 100 },
-    { metric: "Trend", score: Math.min(100, score + 8), fullMark: 100 },
+    { metric: "Carbon Eff.", score: Math.min(100, score + 10) },
+    { metric: "Budget Adh.", score: Math.min(100, score + 5) },
+    { metric: "Offset Cov.", score: Math.max(0, score - 5) },
+    { metric: "Opt. Adopt.", score },
+    { metric: "Trend", score: Math.min(100, score + 8) },
+  ];
+
+  const metrics = [
+    { label: "CO₂ Emitted",  value: `${Number(agent.total_co2e_g).toFixed(3)}g` },
+    { label: "Energy Used",  value: `${Number(agent.total_energy_wh).toFixed(2)} Wh` },
+    { label: "Inferences",   value: Number(agent.total_inferences).toLocaleString() },
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/dashboard/agents" className="flex items-center gap-1 text-sm mb-3 hover:opacity-80 transition-opacity" style={{ color: "var(--green-accent)" }}>
-          <ArrowLeft className="w-4 h-4" /> Back to Agents
+    <motion.div initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}>
+
+      {/* ── Back link ─────────────────────────────────────────────── */}
+      <motion.div variants={item}>
+        <Link href="/dashboard/agents" className="inline-flex items-center gap-1.5 mb-6 hover:opacity-70 transition-opacity"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", textDecoration: "none", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <ArrowLeft className="w-3 h-3" /> Agents
         </Link>
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-          {agent.display_name || agent.agent_id}
-        </h1>
-        <p className="text-sm font-mono mt-1" style={{ color: "var(--text-muted)" }}>{agent.agent_id}</p>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard label="Sustainability Score" value={String(score)} icon={Bot} />
-        <StatCard label="Total CO2e" value={Number(agent.total_co2e_g).toFixed(3)} unit="g" icon={Cloud} />
-        <StatCard label="Energy" value={Number(agent.total_energy_wh).toFixed(2)} unit="Wh" icon={Zap} />
-        <StatCard label="Inferences" value={String(agent.total_inferences)} icon={Droplets} />
-      </div>
+      {/* ── Hero: grade word + score / metrics ────────────────────── */}
+      <motion.div variants={item} style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "2.5rem", marginBottom: "2.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 0 }}>
 
-      <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-5 rounded-xl border p-5" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-          <h3 className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-            Score Breakdown
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-              <PolarGrid stroke="var(--border)" />
-              <PolarAngleAxis dataKey="metric" tick={{ fill: "var(--text-muted)", fontSize: 11 }} />
-              <Radar dataKey="score" stroke="#22c55e" fill="#22c55e" fillOpacity={0.2} strokeWidth={2} />
-            </RadarChart>
-          </ResponsiveContainer>
+          {/* LEFT — grade + agent name */}
+          <div style={{ borderRight: "1px solid #1a1a1a", paddingRight: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <span className="font-condensed block" style={{
+              fontSize: "clamp(3rem, 7vw, 6rem)",
+              color: scoreColor,
+              letterSpacing: "-0.02em",
+              lineHeight: 0.85,
+              marginBottom: "0.75rem",
+            }}>
+              {getLabel(score)}
+            </span>
+            <div className="flex items-baseline gap-3" style={{ marginBottom: "0.5rem" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.05em", lineHeight: 1 }}>
+                {score}
+              </span>
+              <span className="font-condensed" style={{ fontSize: "1.6rem", color: scoreColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                {getGrade(score)}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)" }}>/ 100</span>
+            </div>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+              {agent.display_name || agent.agent_id}
+            </p>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "#2e2e2e", marginTop: "2px" }}>
+              {agent.agent_id}
+            </p>
+          </div>
+
+          {/* RIGHT — 3 metrics inline */}
+          <div style={{ paddingLeft: "2.5rem", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", height: "100%" }}>
+              {metrics.map((m, i) => (
+                <div key={m.label} style={{
+                  borderLeft: i > 0 ? "1px solid #1a1a1a" : "none",
+                  paddingLeft: i > 0 ? "1.5rem" : 0,
+                  paddingRight: i < 2 ? "1.5rem" : 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(1rem, 1.4vw, 1.25rem)", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.04em", lineHeight: 1, display: "block", marginBottom: "5px" }}>
+                    {m.value}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                    {m.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
-        <div className="col-span-7 space-y-4">
-          <WalletGauge pct={agent.wallet_utilization_pct} />
-          {emissionsData.length > 0
-            ? <EmissionsChart data={emissionsData} title={`${agent.display_name || agent.agent_id} — Emissions`} />
-            : <div className="rounded-xl border p-6 text-center text-sm" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)", color: "var(--text-muted)" }}>No emissions data yet.</div>
-          }
-        </div>
-      </div>
+      </motion.div>
 
-      <div>
-        <h2 className="text-sm font-medium uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>
-          Recent Receipts
-        </h2>
-        {receipts.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No receipts for this agent yet.</p>
-        ) : (
-          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
-            {receipts.map((r) => (
-              <div key={r.id} className="flex items-center justify-between px-5 py-3 border-b text-xs"
-                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
-                <span className="font-mono">{formatDate(r.timestamp)}</span>
-                <span>{r.model}</span>
-                <span className="font-mono">{Number(r.environmental_cost.co2e_g).toFixed(4)}g CO2e</span>
-                <span className="font-mono">{Number(r.environmental_cost.energy_wh).toFixed(3)} Wh</span>
-                <span style={{ color: r.comparison?.savings_pct > 0 ? "var(--green-accent)" : "var(--text-muted)" }}>
-                  {r.comparison?.savings_pct > 0 ? `+${r.comparison.savings_pct}%` : "—"}
-                </span>
-              </div>
+      {/* ── Score breakdown + wallet ──────────────────────────────── */}
+      <motion.div variants={item} style={{ marginBottom: "2.5rem" }}>
+        <Sec>Score Breakdown</Sec>
+        <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: "2.5rem" }}>
+
+          {/* Radar */}
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="72%">
+                <PolarGrid stroke="#1a1a1a" />
+                <PolarAngleAxis dataKey="metric" tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }} />
+                <Radar dataKey="score" stroke={scoreColor} fill={scoreColor} fillOpacity={0.15} strokeWidth={1.5} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Carbon wallet */}
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#2e2e2e", marginBottom: "1rem" }}>
+              Carbon Wallet
+            </p>
+            {walletPct != null ? (
+              <>
+                <div style={{ height: "3px", borderRadius: "2px", backgroundColor: "#1a1a1a", marginBottom: "10px", overflow: "hidden" }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(walletPct, 100)}%` }}
+                    transition={{ duration: 0.9, ease: [0.25, 0.1, 0.25, 1] }}
+                    style={{ height: "100%", borderRadius: "2px", backgroundColor: walletColor }}
+                  />
+                </div>
+                <div className="flex items-baseline gap-3">
+                  <span style={{ fontFamily: "var(--font-condensed)", fontSize: "2.5rem", color: walletColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
+                    {walletPct}%
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>used</span>
+                </div>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)", marginTop: "6px" }}>
+                  {walletPct < 50 ? "Healthy budget remaining" : walletPct < 80 ? "Budget getting tight" : "Approaching budget limit"}
+                </p>
+              </>
+            ) : (
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)" }}>No wallet configured</p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── Emissions chart ───────────────────────────────────────── */}
+      {emissionsData.length > 0 && (
+        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem", marginBottom: "2.5rem" }}>
+          <Sec>{`${agent.display_name || agent.agent_id} — Emissions`}</Sec>
+          <div style={{ height: 320 }}>
+            <EmissionsChart data={emissionsData} />
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Recent receipts ───────────────────────────────────────── */}
+      {receipts.length > 0 && (
+        <motion.div variants={item} style={{ borderTop: "1px solid #1a1a1a", paddingTop: "2rem" }}>
+          <Sec>Recent Receipts</Sec>
+
+          {/* Header row */}
+          <div style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 90px 60px", gap: "1rem", padding: "0.5rem 0", borderBottom: "1px solid #1a1a1a" }}>
+            {["Time", "Model", "CO₂e", "Energy", "Saved"].map((h, i) => (
+              <span key={h} style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: i >= 2 ? "right" : "left" }}>
+                {h}
+              </span>
             ))}
           </div>
-        )}
-      </div>
-    </div>
+
+          {receipts.map((r) => (
+            <div key={r.id} style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px 90px 60px", gap: "1rem", alignItems: "center", padding: "0.75rem 0", borderBottom: "1px solid #1a1a1a" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--text-muted)" }}>
+                {formatDate(r.timestamp)}
+              </span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "12px", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {r.model}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", textAlign: "right" }}>
+                {Number(r.environmental_cost?.co2e_g ?? 0).toFixed(4)}g
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--text-muted)", textAlign: "right" }}>
+                {Number(r.environmental_cost?.energy_wh ?? 0).toFixed(3)} Wh
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", textAlign: "right", color: r.comparison?.savings_pct > 0 ? "#22c55e" : "var(--text-muted)" }}>
+                {r.comparison?.savings_pct > 0 ? `+${r.comparison.savings_pct}%` : "—"}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+      )}
+
+    </motion.div>
   );
 }
