@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { ArrowRight, ArrowUpRight, Leaf } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Leaf, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
 
 /* ── Live CO₂ counter ──────────────────────────────────────────── */
 // ~5 billion AI queries/day globally × avg 0.4g CO2 = ~2,000,000g/day
@@ -330,6 +331,7 @@ function CarbonChart() {
 /* ── Nav ───────────────────────────────────────────────────────── */
 function Nav({ user }: { user: any }) {
   const [scrolled, setScrolled] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", fn, { passive: true });
@@ -369,6 +371,16 @@ function Nav({ user }: { user: any }) {
               {item}
             </a>
           ))}
+          <button
+            onClick={toggleTheme}
+            className="w-7 h-7 rounded-md flex items-center justify-center transition-colors duration-100"
+            style={{ color: "#525252", border: "1px solid #1e1e1e", backgroundColor: "transparent" }}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#a1a1a1"; (e.currentTarget as HTMLElement).style.borderColor = "#2a2a2a"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#525252"; (e.currentTarget as HTMLElement).style.borderColor = "#1e1e1e"; }}
+          >
+            {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
           <Link
             href={user ? "/dashboard" : "/login"}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all duration-150"
