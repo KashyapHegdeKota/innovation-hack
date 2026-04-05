@@ -429,26 +429,35 @@ apps/
       levy_batch.py     ← Background job: batch levy submissions
       score_compute.py  ← Daily job: compute sustainability scores
 
-  web/                  ← Next.js frontend (already exists)
+  web/                  ← Next.js frontend dashboard
     app/
+      page.tsx            ← Root redirect to /dashboard
       dashboard/
-        page.tsx        ← Main dashboard (extend with GreenLedger widgets)
+        layout.tsx        ← Dashboard shell with sidebar + auth guard
+        page.tsx          ← Overview: sustainability gauge, stat cards, charts
+        router/
+          page.tsx        ← Green Router: routing decisions, alternatives, savings
         agents/
-          page.tsx      ← Per-agent carbon view
+          page.tsx        ← Agent leaderboard: scores, wallet usage, trends
           [id]/
-            page.tsx    ← Single agent detail
+            page.tsx      ← Agent detail: radar chart, wallet gauge, receipts
+        wallets/
+          page.tsx        ← Carbon Wallets: budget burn charts, policy config
+        levy/
+          page.tsx        ← Carbon Levy: Stripe Climate tracking, destinations
         receipts/
-          page.tsx      ← Receipt explorer
-        scores/
-          page.tsx      ← Sustainability scores + benchmarks
-        settings/
-          page.tsx      ← Wallet configs, levy settings, integrations
+          page.tsx        ← Receipt explorer: filterable table, export
     components/
-      CarbonGauge.tsx       ← Visual carbon budget gauge
-      ReceiptCard.tsx       ← Single receipt display
-      SustainabilityScore.tsx ← Score badge/chart
-      EmissionsChart.tsx    ← Time-series emissions chart
-      GreenRouterViz.tsx    ← Visual of routing decision
+      Sidebar.tsx             ← Navigation sidebar with 6 pages
+      StatCard.tsx            ← Metric card with trend arrows
+      SustainabilityGauge.tsx ← SVG semicircle score gauge (0-100)
+      EmissionsChart.tsx      ← Area chart (CO2e + energy over time)
+      ModelPieChart.tsx       ← Donut chart of model usage breakdown
+      RecommendationCard.tsx  ← Actionable optimization suggestion
+    lib/
+      mock-data.ts        ← Demo data for all pages (swap with API later)
+      greenledger-api.ts  ← Typed API client for all backend endpoints
+      api-client.ts       ← Axios instance with auth interceptor
 
 sdk/                    ← NEW: Client SDKs
   python/

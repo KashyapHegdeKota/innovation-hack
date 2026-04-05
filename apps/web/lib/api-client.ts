@@ -1,18 +1,13 @@
 import axios from "axios";
-import { auth } from "./firebase";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
 });
 
-// Request interceptor to attach Firebase JWT
+// Request interceptor — use demo token for now (swap back to Firebase later)
 apiClient.interceptors.request.use(
   async (config) => {
-    const user = auth.currentUser;
-    if (user) {
-      const token = await user.getIdToken();
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    config.headers.Authorization = "Bearer demo-user-001";
     return config;
   },
   (error) => {
