@@ -13,6 +13,7 @@ const navItems = [
   { href: "/dashboard/wallets",  label: "Carbon Wallets" },
   { href: "/dashboard/levy",     label: "Carbon Levy"    },
   { href: "/dashboard/receipts", label: "Receipts"       },
+  { href: "/dashboard/cli",      label: "CLI Installation" },
 ];
 
 export default function Sidebar() {
