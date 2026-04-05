@@ -2,7 +2,7 @@
 // Represents ALL users of GreenLedger, not a single org
 
 export const platformStats = {
-  total_orgs: 47,
+  total_clients: 12,
   total_agents: 312,
   total_inferences: 284_391,
   total_co2e_avoided_g: 18_742.6,
@@ -17,10 +17,10 @@ export const platformStats = {
 };
 
 export const platformGrowth = [
-  { week: "W1 Mar", orgs: 38, agents: 241, inferences: 52_100 },
-  { week: "W2 Mar", orgs: 41, agents: 268, inferences: 64_800 },
-  { week: "W3 Mar", orgs: 44, agents: 289, inferences: 78_200 },
-  { week: "W4 Mar", orgs: 47, agents: 312, inferences: 89_291 },
+  { week: "W1 Mar", clients: 6, agents: 241, inferences: 52_100 },
+  { week: "W2 Mar", clients: 8, agents: 268, inferences: 64_800 },
+  { week: "W3 Mar", clients: 10, agents: 289, inferences: 78_200 },
+  { week: "W4 Mar", clients: 12, agents: 312, inferences: 89_291 },
 ];
 
 export const platformEmissions = [
@@ -34,15 +34,10 @@ export const platformEmissions = [
   { date: "Mar 29", co2e_avoided: 384.2, co2e_actual: 468.1, levy_usd: 3.46 },
 ];
 
-export const topOrgs = [
-  { name: "NovaTech AI", agents: 24, inferences: 42_180, co2e_avoided_g: 2_841.2, score: 91, levy_usd: 18.42 },
-  { name: "Vertex Labs", agents: 18, inferences: 31_420, co2e_avoided_g: 2_124.8, score: 86, levy_usd: 14.21 },
-  { name: "CloudMind Inc", agents: 32, inferences: 28_940, co2e_avoided_g: 1_948.1, score: 82, levy_usd: 12.84 },
-  { name: "GreenOps Co", agents: 12, inferences: 24_610, co2e_avoided_g: 1_712.4, score: 79, levy_usd: 11.02 },
-  { name: "DataForge", agents: 21, inferences: 22_380, co2e_avoided_g: 1_524.6, score: 77, levy_usd: 9.84 },
-  { name: "Synapse.dev", agents: 15, inferences: 19_840, co2e_avoided_g: 1_342.1, score: 75, levy_usd: 8.62 },
-  { name: "Aether Systems", agents: 28, inferences: 18_210, co2e_avoided_g: 1_218.4, score: 73, levy_usd: 7.94 },
-  { name: "PulseAI", agents: 9, inferences: 15_680, co2e_avoided_g: 1_084.2, score: 71, levy_usd: 6.81 },
+export const topClients = [
+  { user_id: "demo-user-001", inferences: 42_180, co2e_g: 2.841, score: 91, levy_usd: 0.0142 },
+  { user_id: "demo-user-002", inferences: 31_420, co2e_g: 2.124, score: 86, levy_usd: 0.0121 },
+  { user_id: "demo-user-003", inferences: 28_940, co2e_g: 1.948, score: 82, levy_usd: 0.0098 },
 ];
 
 export const modelEcosystem = [
@@ -91,10 +86,10 @@ export const carbonRemoval = {
 };
 
 export const recentPlatformActivity = [
-  { timestamp: "2026-03-31T14:32:00Z", org: "NovaTech AI", event: "New agent registered", detail: "research-bot-v3" },
-  { timestamp: "2026-03-31T14:18:00Z", org: "Vertex Labs", event: "Wallet budget hit 90%", detail: "ml-pipeline-agent" },
-  { timestamp: "2026-03-31T13:55:00Z", org: "CloudMind Inc", event: "New org onboarded", detail: "Enterprise plan" },
-  { timestamp: "2026-03-31T13:42:00Z", org: "GreenOps Co", event: "Score milestone", detail: "Reached 79 sustainability score" },
-  { timestamp: "2026-03-31T13:28:00Z", org: "DataForge", event: "Levy confirmed", detail: "$2.41 → Stripe Climate" },
-  { timestamp: "2026-03-31T12:15:00Z", org: "NovaTech AI", event: "Downgrade accepted", detail: "opus → sonnet (batch job)" },
+  { timestamp: "2026-03-31T14:32:00Z", client: "demo-user-001", event: "Inference: haiku-4-5", detail: "0.0082g CO₂e" },
+  { timestamp: "2026-03-31T14:18:00Z", client: "demo-user-002", event: "Downgrade: sonnet-4-6 → haiku-4-5", detail: "0.0041g CO₂e" },
+  { timestamp: "2026-03-31T13:55:00Z", client: "demo-user-003", event: "Inference: gpt-4.1-nano", detail: "0.0024g CO₂e" },
+  { timestamp: "2026-03-31T13:42:00Z", client: "demo-user-001", event: "Downgrade: opus-4-6 → sonnet-4-6", detail: "0.0912g CO₂e" },
+  { timestamp: "2026-03-31T13:28:00Z", client: "demo-user-002", event: "Levy confirmed", detail: "$0.0042 → Stripe Climate" },
+  { timestamp: "2026-03-31T12:15:00Z", client: "demo-user-001", event: "Inference: sonnet-4-6", detail: "0.0481g CO₂e" },
 ];

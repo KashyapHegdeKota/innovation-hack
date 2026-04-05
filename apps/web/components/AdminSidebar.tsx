@@ -7,7 +7,7 @@ import { useTheme } from "@/context/ThemeContext";
 
 const navItems = [
   { href: "/admin/dashboard",           label: "Platform Overview" },
-  { href: "/admin/dashboard/orgs",      label: "Organizations" },
+  { href: "/admin/dashboard/clients",    label: "Clients" },
   { href: "/admin/dashboard/routing",   label: "Routing Intelligence" },
   { href: "/admin/dashboard/carbon",    label: "Carbon Removal" },
   { href: "/admin/dashboard/activity",  label: "Activity Feed" },

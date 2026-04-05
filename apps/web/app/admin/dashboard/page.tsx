@@ -17,7 +17,7 @@ import {
   platformStats as mockStats,
   platformEmissions as mockEmissions,
   platformGrowth as mockGrowth,
-  topOrgs as mockOrgs,
+  topClients as mockClients,
   modelEcosystem as mockModels,
   routingIntelligence as mockRouting,
   carbonRemoval as mockCarbon,
@@ -113,8 +113,13 @@ export default function AdminDashboardPage() {
         const totalAccepted = downgrades.length + DUMMY_AGENTS.flatMap(a => a.decisions.filter(d => d.accepted_recommendation)).length;
         const acceptRate = totalDecisions > 0 ? Math.round((totalAccepted / totalDecisions) * 100) : mockRouting.acceptance_rate_pct;
 
+        // Unique clients = unique agent_ids from receipts + dummy agents
+        const liveClientIds = new Set(raw.map((r: any) => r.agent_id).filter(Boolean));
+        DUMMY_AGENTS.forEach(a => liveClientIds.add(a.agent_id));
+        const totalClients = liveClientIds.size;
+
         setStats({
-          total_orgs: mockStats.total_orgs,
+          total_clients: totalClients,
           total_agents: activeAgents,
           total_inferences: totalInf,
           total_co2e_avoided_g: totalCo2e,
@@ -227,7 +232,7 @@ export default function AdminDashboardPage() {
         // ── Recent activity from receipts ────────────────────────
         const activity = raw.slice(0, 8).map((r: any) => ({
           timestamp: r.timestamp,
-          org: r.agent_id || "unknown",
+          client: r.agent_id || "unknown",
           event: r.requested_model && r.model && r.requested_model !== r.model
             ? `Downgrade: ${shortModel(r.requested_model)} → ${shortModel(r.model)}`
             : `Inference: ${shortModel(r.model || "unknown")}`,
@@ -238,9 +243,9 @@ export default function AdminDashboardPage() {
 
       } catch {
         // All mock data already set as defaults
-        setAgents(mockOrgs.map(o => ({
-          agent_id: o.name, display_name: o.name, total_inferences: o.inferences,
-          total_co2e_g: o.co2e_avoided_g, sustainability_score: o.score, trend: "on_track",
+        setAgents(mockClients.map(c => ({
+          agent_id: c.user_id, display_name: c.user_id, total_inferences: c.inferences,
+          total_co2e_g: c.co2e_g, sustainability_score: c.score, trend: "on_track",
           total_energy_wh: 0, wallet_utilization_pct: null,
         })));
         setRecentActivity(mockActivity as any);
@@ -263,7 +268,7 @@ export default function AdminDashboardPage() {
               </h1>
             </div>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              GreenLedger impact across all organizations &middot; {stats.period}
+              GreenLedger impact across all clients &middot; {stats.period}
             </p>
           </div>
           {/* Live badge */}
@@ -291,7 +296,7 @@ export default function AdminDashboardPage() {
           sub={`$${stats.total_api_cost_saved_usd.toFixed(2)} API savings`} icon={DollarSign} color="#f59e0b" delay="3" />
         <StatCard label="Downgrade Acceptance" value={`${stats.downgrade_acceptance_rate_pct}%`}
           sub={`${stats.avg_sustainability_score} avg score`} icon={TrendingUp} color="#3b82f6" delay="4" />
-        <StatCard label="Organizations" value={stats.total_orgs.toString()} sub="active this period" icon={Users} color="#a855f7" delay="1" />
+        <StatCard label="Clients" value={stats.total_clients.toString()} sub="unique user IDs" icon={Users} color="#a855f7" delay="1" />
         <StatCard label="AI Agents" value={stats.total_agents.toString()} sub="registered" icon={Bot} color="#ec4899" delay="2" />
         <StatCard label="Energy Used" value={`${stats.total_energy_saved_wh < 1000 ? stats.total_energy_saved_wh.toFixed(2) + " Wh" : (stats.total_energy_saved_wh / 1000).toFixed(1) + " kWh"}`}
           sub={`${stats.total_water_saved_ml < 1000 ? stats.total_water_saved_ml.toFixed(1) + " mL" : (stats.total_water_saved_ml / 1000).toFixed(1) + " L"} water`} icon={Zap} color="#06b6d4" delay="3" />
@@ -487,7 +492,7 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] font-mono shrink-0 w-14" style={{ color: "var(--text-muted)" }}>
                 {new Date(a.timestamp).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })}
               </span>
-              <span className="text-xs font-medium w-28 truncate" style={{ color: "var(--text-primary)" }}>{a.org}</span>
+              <span className="text-xs font-medium w-28 truncate" style={{ color: "var(--text-primary)" }}>{a.client}</span>
               <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{a.event}</span>
               <span className="text-xs font-mono ml-auto" style={{ color: "var(--text-muted)" }}>{a.detail}</span>
             </div>

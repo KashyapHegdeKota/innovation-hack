@@ -72,7 +72,7 @@ export default function AdminActivityPage() {
         mockActivity.forEach(a => {
           const day = new Date(a.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
           if (!groups[day]) groups[day] = [];
-          groups[day].push({ ...a, agent: a.org, isDowngrade: a.event.includes("Downgrade"), co2e: 0 });
+          groups[day].push({ ...a, agent: a.client, isDowngrade: a.event.includes("Downgrade"), co2e: 0 });
         });
         setGrouped(groups);
         setStats({ today: mockActivity.length, downgrades: 2, totalCo2e: 0, totalQueries: mockActivity.length });
