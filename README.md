@@ -1,6 +1,6 @@
 # GreenLedger
 
-**Carbon-aware AI infrastructure for the agentic economy.**
+**Carbon-aware AI infrastructure for the agentic economy**
 
 GreenLedger sits between you and AI model providers, ensuring every inference is environmentally accountable. It automatically detects overkill model usage, suggests greener alternatives, and tracks CO2e, energy, and water consumption per query — with full environmental receipts.
 
