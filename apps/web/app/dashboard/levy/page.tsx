@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Leaf, DollarSign, CheckCircle, Clock, AlertCircle, ArrowRight, PiggyBank, TrendingDown, RefreshCcw } from "lucide-react";
+import { Leaf, DollarSign, CheckCircle, Clock, AlertCircle, ArrowRight, PiggyBank, TrendingDown, RefreshCcw, ExternalLink, Heart } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar,
@@ -157,6 +157,81 @@ export default function LevyPage() {
               {i < arr.length - 1 && <ArrowRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Stripe Climate Contribution */}
+      <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}>
+        {/* Accent bar */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, #635bff, #00d4ff)" }} />
+
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-6">
+            {/* Left: info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-3">
+                {/* Stripe Climate wordmark */}
+                <div className="flex items-center gap-2">
+                  <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" rx="8" fill="#635bff" />
+                    <path d="M18.5 15.5C18.5 14.12 19.62 13.42 21.5 13.42C24.05 13.42 27.22 14.27 29.77 15.72V9.22C26.97 8.07 24.2 7.5 21.5 7.5C15.7 7.5 11.75 10.57 11.75 15.82C11.75 24.02 23 22.57 23 27.07C23 28.7 21.6 29.37 19.6 29.37C16.8 29.37 13.3 28.17 10.5 26.47V33.07C13.6 34.47 16.72 35.07 19.6 35.07C25.55 35.07 29.75 32.1 29.75 26.77C29.75 17.97 18.5 19.72 18.5 15.5Z" fill="white" />
+                  </svg>
+                  <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Stripe Climate</span>
+                </div>
+              </div>
+
+              <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>
+                Stripe Climate channels funds to a portfolio of frontier carbon removal projects — technologies like
+                direct air capture, enhanced weathering, and bio-oil sequestration that permanently remove CO₂ from
+                the atmosphere. Every dollar funds scientific breakthroughs that scale carbon removal to the
+                gigatonne level.
+              </p>
+
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                {[
+                  { label: "Removal projects funded", value: "30+" },
+                  { label: "Tonnes removed to date", value: "100K+" },
+                  { label: "Of contribution to removal", value: "100%" },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-lg p-2.5" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                    <p className="text-sm font-bold font-mono" style={{ color: "var(--text-primary)" }}>{stat.value}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  className="flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-lg transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: "#635bff", color: "#ffffff" }}
+                  onClick={() => {}}
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  Contribute to Carbon Removal
+                </button>
+                <a
+                  href="https://stripe.com/climate"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-lg border transition-opacity hover:opacity-80"
+                  style={{ borderColor: "var(--border-bright)", color: "var(--text-secondary)" }}
+                >
+                  Learn more at stripe.com/climate
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Right: visual */}
+            <div className="hidden lg:flex flex-col items-center justify-center w-40 shrink-0">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: "rgba(99,91,255,0.08)", border: "1px solid rgba(99,91,255,0.15)" }}>
+                <Leaf className="w-8 h-8" style={{ color: "#635bff" }} />
+              </div>
+              <p className="text-[10px] text-center font-mono" style={{ color: "var(--text-muted)" }}>
+                Fund permanent<br />carbon removal
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
