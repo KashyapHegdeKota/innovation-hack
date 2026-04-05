@@ -36,8 +36,8 @@ console = Console()
 # ── Config ──────────────────────────────────────────────────────────────────────
 
 API_URL           = "https://api.anthropic.com/v1/messages"
-ROUTER_URL        = os.environ.get("ROUTER_URL", "http://localhost:8000/v1/analyze")
-INFER_URL         = os.environ.get("INFER_URL",  "http://localhost:8000/v1/infer")
+ROUTER_URL = os.environ.get("ROUTER_URL", "https://api.kashyaphegde.com/greenledger/v1/analyze")
+INFER_URL  = os.environ.get("INFER_URL",  "https://api.kashyaphegde.com/greenledger/v1/infer")
 
 # ── Model registry ───────────────────────────────────────────────────────────────
 
@@ -711,7 +711,7 @@ async def maybe_reroute(
     rec_tier    = (f"[{TIER_COLOR.get(rec_info.tier,'white')}]{rec_info.tier}[/]"
                    if rec_info else "")
 
-    fallback     = NON_ANTHROPIC_FALLBACK.get(recommended)
+    fallback     = None
     fallback_note = ""
     if fallback and fallback in MODEL_INDEX:
         fb = MODEL_INDEX[fallback]
