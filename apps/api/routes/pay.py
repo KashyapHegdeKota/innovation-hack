@@ -7,8 +7,8 @@ Endpoints:
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from ..auth import get_current_user
-from ..models.schemas import PayRequest, PayResponse
+from auth import get_current_user
+from models.schemas import PayRequest, PayResponse
 
 router = APIRouter()
 

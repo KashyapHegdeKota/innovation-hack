@@ -3,8 +3,8 @@ Sustainability Score routes — computed from in-memory store.
 """
 
 from fastapi import APIRouter, Depends
-from ..auth import get_current_user
-from ..store import get_dashboard_summary, get_agent_summaries, get_receipts
+from auth import get_current_user
+from store import get_dashboard_summary, get_agent_summaries, get_receipts
 
 router = APIRouter()
 

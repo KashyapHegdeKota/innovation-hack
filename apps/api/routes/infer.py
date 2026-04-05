@@ -9,10 +9,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import get_current_user
-from ..services.providers import execute_inference, ProviderError
-from ..services.keystore import KeyStore
-from ..store import add_receipt, deduct_wallet
+from auth import get_current_user
+from services.providers import execute_inference, ProviderError
+from services.keystore import KeyStore
+from store import add_receipt, deduct_wallet
 from cli.models.registry import MODELS, get_model
 from cli.utils.carbon import estimate_query_cost, estimate_routing_savings, estimate_api_cost
 import json

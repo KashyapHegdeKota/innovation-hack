@@ -12,9 +12,9 @@ Endpoints:
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from ..auth import get_current_user
-from ..database import get_supabase_client
-from ..models.schemas import (
+from auth import get_current_user
+from database import get_supabase_client
+from models.schemas import (
     OrgCreate, OrgResponse,
     ApiKeyCreate, ApiKeyResponse, ApiKeyCreated,
     AgentCreate, AgentResponse,

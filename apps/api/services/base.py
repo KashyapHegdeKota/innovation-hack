@@ -6,7 +6,7 @@ Provides common functionality like database access, logging, and health checks.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 import logging
-from ..database import get_supabase_client
+from database import get_supabase_client
 
 
 class BaseService(ABC):

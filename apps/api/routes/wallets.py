@@ -3,8 +3,8 @@ Carbon Wallet routes — reads from in-memory store.
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from ..auth import get_current_user
-from ..store import get_wallet, _wallets
+from auth import get_current_user
+from store import get_wallet, _wallets
 
 router = APIRouter()
 

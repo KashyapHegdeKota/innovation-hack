@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from typing import Optional
 from pydantic import BaseModel
-from ..auth import get_current_user
-from ..store import get_receipts, get_receipt_by_id, add_receipt, deduct_wallet
+from auth import get_current_user
+from store import get_receipts, get_receipt_by_id, add_receipt, deduct_wallet
 import json
 import uuid
 from datetime import datetime, timezone
